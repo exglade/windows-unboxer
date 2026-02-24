@@ -1,4 +1,4 @@
-# Interactive Windows PC Setup with PowerShell
+# Windows Unboxer
 
 An interactive automated Windows PC setup with PowerShell.
 
