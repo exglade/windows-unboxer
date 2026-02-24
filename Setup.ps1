@@ -23,6 +23,12 @@
     Overrides which items are pre-checked in the TUI and can override 'scope' / 'override'
     for individual app items. See profile.example.json for the file format.
 
+.PARAMETER Silent
+    Run without any user interaction. Skips the TUI checklist (uses pre-selected items
+    from the catalog or profile), auto-confirms the execution prompt, auto-handles
+    resume choices, and auto-restarts Explorer when required by tweaks.
+    Pair with -ProfilePath to drive the selection from a profile file.
+
 .EXAMPLE
     .\Setup.ps1                                          # Normal interactive run
     .\Setup.ps1 -DryRun                                  # Preview only
@@ -30,6 +36,8 @@
     .\Setup.ps1 -Mock -TweakTarget Test                  # Fake + safe registry
     .\Setup.ps1 -Mock -FailStepId dev.vscode             # Simulate failure on VS Code step
     .\Setup.ps1 -ProfilePath .\profile.example.json      # Load a profile
+    .\Setup.ps1 -Silent                                  # No-prompt run with default selection
+    .\Setup.ps1 -Silent -ProfilePath .\profile.example.json  # No-prompt run with profile
 #>
 [CmdletBinding()]
 param(
@@ -42,7 +50,9 @@ param(
 
     [string]$FailStepId = $null,
 
-    [string]$ProfilePath = $null
+    [string]$ProfilePath = $null,
+
+    [switch]$Silent
 )
 
 Set-StrictMode -Version Latest
@@ -98,6 +108,7 @@ $RunContext = @{
     TweakTarget = $TweakTarget
     FailStepId  = $FailStepId
     Paths       = $Paths
+    Silent      = $Silent.IsPresent
 }
 
 # ---------------------------------------------------------------------------
@@ -107,7 +118,7 @@ Initialize-ArtifactDirectories -Paths $Paths
 Initialize-Log -LogDir $Paths.Logs
 
 Write-Log "=== PC Setup starting ==="
-Write-Log "Mode=$mode  TweakTarget=$TweakTarget  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
+Write-Log "Mode=$mode  TweakTarget=$TweakTarget  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
 
 # Mode banner
 switch ($mode) {
@@ -122,6 +133,10 @@ switch ($mode) {
             Write-Host "  *** Will simulate failure on step: $FailStepId ***" -ForegroundColor Yellow
         }
     }
+}
+if ($Silent) {
+    Write-Host ''
+    Write-Host '  *** SILENT MODE — running without user interaction ***' -ForegroundColor Cyan
 }
 Write-Host ''
 
@@ -166,6 +181,20 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
         $incompletePart = $existingState.steps | Where-Object { $_.status -ne 'Succeeded' -and $_.status -ne 'Skipped' }
 
         if ($incompletePart) {
+            if ($Silent) {
+                Write-Log 'Silent mode — auto-resuming pending steps.'
+                $stateToUse = ConvertTo-MutableState -StateObj $existingState
+                $planToUse  = ConvertTo-MutablePlan  -PlanObj  $existingPlan
+
+                Write-Log "Resuming pending steps..."
+                Invoke-Plan -Plan $planToUse -State $stateToUse `
+                    -CatalogItems $catalogItems `
+                    -RunContext   $RunContext `
+                    -ResumeOption 'ResumePending'
+                Show-Report -State $stateToUse -Paths $Paths
+                exit 0
+            }
+
             $menuResult = Invoke-ResumeMenu -State $existingState -Paths $Paths
 
             if (-not $menuResult -or $menuResult.Action -eq 'Cancel') {
@@ -224,6 +253,11 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
             Write-Log 'All steps already succeeded. Nothing to resume.'
             Show-Report -State $existingState -Paths $Paths
 
+            if ($Silent) {
+                Write-Log 'Silent mode — exiting (all steps already complete).'
+                exit 0
+            }
+
             Write-Host '  All steps are already complete. Start over? (Y/N): ' -NoNewline
             $k = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
             Write-Host $k.Character
@@ -241,14 +275,19 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
 # ---------------------------------------------------------------------------
 Write-Log 'Starting plan mode — showing checklist.'
 
-$selectedIds = Invoke-TuiChecklist -Items $catalogItems -PreselectedIds $preselectedIds `
-    -Title 'Windows 11 PC Setup — select items to install/configure'
+if ($Silent) {
+    Write-Log 'Silent mode — skipping TUI checklist, using pre-selected items.'
+    $selectedIds = @($preselectedIds | Where-Object { $_ })
+} else {
+    $selectedIds = Invoke-TuiChecklist -Items $catalogItems -PreselectedIds $preselectedIds `
+        -Title 'Windows 11 PC Setup — select items to install/configure'
 
-if ($null -eq $selectedIds) {
-    Write-Log 'User cancelled checklist (ESC).'
-    Write-Host ''
-    Write-Host '  Setup cancelled.' -ForegroundColor Yellow
-    exit 0
+    if ($null -eq $selectedIds) {
+        Write-Log 'User cancelled checklist (ESC).'
+        Write-Host ''
+        Write-Host '  Setup cancelled.' -ForegroundColor Yellow
+        exit 0
+    }
 }
 
 if ($selectedIds.Count -eq 0) {
@@ -278,6 +317,8 @@ Write-Host ''
 
 if ($mode -eq 'DryRun') {
     Write-Host '  [DRY RUN] Proceeding without confirmation...' -ForegroundColor Magenta
+} elseif ($Silent) {
+    Write-Host '  [SILENT] Proceeding without confirmation...' -ForegroundColor Cyan
 } else {
     Write-Host '  Proceed with installation? (Y/N): ' -NoNewline
     $confirm = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')

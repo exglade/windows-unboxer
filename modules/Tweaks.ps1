@@ -204,6 +204,12 @@ function Invoke-ExplorerRestartPrompt {
         return
     }
 
+    if ($RunContext.Silent) {
+        Write-Log 'Silent mode — restarting Explorer automatically.' -Level INFO
+        Restart-Explorer
+        return
+    }
+
     Write-Host ''
     Write-Host '  Some tweaks requested an Explorer restart.' -ForegroundColor Yellow
     Write-Host '  Restart Explorer now? (Y/N): ' -NoNewline
