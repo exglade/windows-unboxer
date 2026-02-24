@@ -1,0 +1,362 @@
+<#
+.SYNOPSIS
+    Windows 11 Fresh PC Setup tool.
+    Interactive checklist -> plan generation -> execution with resume support.
+
+.PARAMETER DryRun
+    Exercise everything except side effects.
+    Logs would-be commands; marks steps Succeeded without running winget/registry.
+
+.PARAMETER Mock
+    Full execution flow with fake actions (no real winget or registry writes).
+    Useful for testing resume behaviour and state transitions.
+
+.PARAMETER TweakTarget
+    'Real' (default) or 'Test'.
+    'Test' redirects registry writes to HKCU:\Software\KaiSetup\TestTweaks\...
+
+.PARAMETER FailStepId
+    (Only with -Mock) Simulate a failure on the step with this ID.
+
+.PARAMETER ProfilePath
+    Optional path to a profile JSON file.
+    Overrides which items are pre-checked in the TUI and can override 'scope' / 'override'
+    for individual app items. See profile.example.json for the file format.
+
+.EXAMPLE
+    .\Setup.ps1                                          # Normal interactive run
+    .\Setup.ps1 -DryRun                                  # Preview only
+    .\Setup.ps1 -Mock                                    # Fake execution
+    .\Setup.ps1 -Mock -TweakTarget Test                  # Fake + safe registry
+    .\Setup.ps1 -Mock -FailStepId dev.vscode             # Simulate failure on VS Code step
+    .\Setup.ps1 -ProfilePath .\profile.example.json      # Load a profile
+#>
+[CmdletBinding()]
+param(
+    [switch]$DryRun,
+
+    [switch]$Mock,
+
+    [ValidateSet('Real', 'Test')]
+    [string]$TweakTarget = 'Real',
+
+    [string]$FailStepId = $null,
+
+    [string]$ProfilePath = $null
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+# ---------------------------------------------------------------------------
+# Determine root directory (location of this script)
+# ---------------------------------------------------------------------------
+$ScriptRoot = $PSScriptRoot
+if (-not $ScriptRoot) {
+    $ScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+}
+
+# ---------------------------------------------------------------------------
+# 1. Load modules
+# ---------------------------------------------------------------------------
+$moduleFiles = @(
+    'Common.ps1',
+    'Catalog.ps1',
+    'TuiChecklist.ps1',
+    'PlanState.ps1',
+    'Tweaks.ps1',
+    'Executor.ps1'
+)
+
+foreach ($mod in $moduleFiles) {
+    $modPath = Join-Path $ScriptRoot "modules\$mod"
+    if (-not (Test-Path $modPath)) {
+        Write-Error "Required module not found: $modPath"
+        exit 1
+    }
+    . $modPath
+}
+
+# ---------------------------------------------------------------------------
+# 2. Build RunContext
+# ---------------------------------------------------------------------------
+$mode = 'Real'
+if ($DryRun)  { $mode = 'DryRun' }
+elseif ($Mock){ $mode = 'Mock'   }
+
+# In Mock mode, warn if TweakTarget is Real (discourage accidental registry writes)
+if ($mode -eq 'Mock' -and $TweakTarget -eq 'Real') {
+    Write-Warning "Running in Mock mode with TweakTarget=Real. Registry tweaks will be simulated (no writes). Consider -TweakTarget Test."
+    # In Mock mode, auto-redirect to Test to keep machine clean
+    $TweakTarget = 'Test'
+}
+
+$Paths = Get-ArtifactPaths -RootDir $ScriptRoot
+
+$RunContext = @{
+    Mode        = $mode
+    TweakTarget = $TweakTarget
+    FailStepId  = $FailStepId
+    Paths       = $Paths
+}
+
+# ---------------------------------------------------------------------------
+# 3. Initialize directories and logging
+# ---------------------------------------------------------------------------
+Initialize-ArtifactDirectories -Paths $Paths
+Initialize-Log -LogDir $Paths.Logs
+
+Write-Log "=== PC Setup starting ==="
+Write-Log "Mode=$mode  TweakTarget=$TweakTarget  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
+
+# Mode banner
+switch ($mode) {
+    'DryRun' {
+        Write-Host ''
+        Write-Host '  *** DRY RUN MODE — no changes will be made ***' -ForegroundColor Magenta
+    }
+    'Mock' {
+        Write-Host ''
+        Write-Host '  *** MOCK MODE — fake execution, no real installs/registry changes ***' -ForegroundColor Magenta
+        if ($FailStepId) {
+            Write-Host "  *** Will simulate failure on step: $FailStepId ***" -ForegroundColor Yellow
+        }
+    }
+}
+Write-Host ''
+
+# ---------------------------------------------------------------------------
+# 4. Prerequisite checks
+# ---------------------------------------------------------------------------
+Assert-Prerequisites -RunContext $RunContext
+
+# ---------------------------------------------------------------------------
+# 5. Load catalog
+# ---------------------------------------------------------------------------
+Write-Log "Loading catalog: $($Paths.Catalog)"
+$catalogItems   = Import-Catalog -CatalogPath $Paths.Catalog
+$preselectedIds = Get-PreselectedIds -Items $catalogItems
+
+# Apply profile if supplied
+if ($ProfilePath) {
+    $profileData  = Import-Profile -ProfilePath $ProfilePath
+    $catalogItems = Merge-ProfileOverrides -Items $catalogItems -Profile $profileData
+
+    $profileHasSelectedIds = $null -ne $profileData.PSObject.Properties['selectedIds'] -and
+                             $null -ne $profileData.selectedIds
+    if ($profileHasSelectedIds) {
+        $preselectedIds = @($profileData.selectedIds)
+        Write-Log "Profile pre-selection ($($preselectedIds.Count) item(s)): $($preselectedIds -join ', ')"
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 6. Resume check
+# ---------------------------------------------------------------------------
+$resumeOption = 'All'   # default for fresh start
+
+if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
+    Write-Log 'Existing state found — showing resume menu.'
+
+    try {
+        $existingState = Read-JsonFile -Path $Paths.State
+        $existingPlan  = Read-JsonFile -Path $Paths.Plan
+
+        # Check if any step is not Succeeded
+        $incompletePart = $existingState.steps | Where-Object { $_.status -ne 'Succeeded' -and $_.status -ne 'Skipped' }
+
+        if ($incompletePart) {
+            $menuResult = Invoke-ResumeMenu -State $existingState -Paths $Paths
+
+            if (-not $menuResult -or $menuResult.Action -eq 'Cancel') {
+                Write-Log 'User cancelled.'
+                exit 0
+            }
+
+            switch ($menuResult.Action) {
+
+                'ViewReport' {
+                    Show-Report -State $existingState -Paths $Paths
+                    Write-Host '  Press any key to exit...' -NoNewline
+                    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+                    exit 0
+                }
+
+                'StartOver' {
+                    Write-Log 'Starting over — archiving previous artifacts.'
+                    Invoke-ArchiveArtifacts -Paths $Paths
+                    # Fall through to plan mode below
+                }
+
+                'ResumePending' {
+                    $resumeOption  = 'ResumePending'
+
+                    # Convert PSCustomObject state to mutable hashtable
+                    $stateToUse = ConvertTo-MutableState -StateObj $existingState
+                    $planToUse  = ConvertTo-MutablePlan  -PlanObj  $existingPlan
+
+                    Write-Log "Resuming pending steps..."
+                    Invoke-Plan -Plan $planToUse -State $stateToUse `
+                        -CatalogItems $catalogItems `
+                        -RunContext   $RunContext `
+                        -ResumeOption $resumeOption
+                    Show-Report -State $stateToUse -Paths $Paths
+                    exit 0
+                }
+
+                'RerunFailed' {
+                    $resumeOption  = 'RerunFailed'
+
+                    $stateToUse = ConvertTo-MutableState -StateObj $existingState
+                    $planToUse  = ConvertTo-MutablePlan  -PlanObj  $existingPlan
+
+                    Write-Log "Re-running failed steps..."
+                    Invoke-Plan -Plan $planToUse -State $stateToUse `
+                        -CatalogItems $catalogItems `
+                        -RunContext   $RunContext `
+                        -ResumeOption $resumeOption
+                    Show-Report -State $stateToUse -Paths $Paths
+                    exit 0
+                }
+            }
+            # If we reach here it was StartOver — fall through to plan mode
+        } else {
+            Write-Log 'All steps already succeeded. Nothing to resume.'
+            Show-Report -State $existingState -Paths $Paths
+
+            Write-Host '  All steps are already complete. Start over? (Y/N): ' -NoNewline
+            $k = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+            Write-Host $k.Character
+            if ($k.Character -ne 'Y' -and $k.Character -ne 'y') { exit 0 }
+
+            Invoke-ArchiveArtifacts -Paths $Paths
+        }
+    } catch {
+        Write-Log "Failed to load existing state/plan: $_  — will start fresh." -Level WARN
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 7. Plan mode — checklist -> plan -> state -> confirmation
+# ---------------------------------------------------------------------------
+Write-Log 'Starting plan mode — showing checklist.'
+
+$selectedIds = Invoke-TuiChecklist -Items $catalogItems -PreselectedIds $preselectedIds `
+    -Title 'Windows 11 PC Setup — select items to install/configure'
+
+if ($null -eq $selectedIds) {
+    Write-Log 'User cancelled checklist (ESC).'
+    Write-Host ''
+    Write-Host '  Setup cancelled.' -ForegroundColor Yellow
+    exit 0
+}
+
+if ($selectedIds.Count -eq 0) {
+    Write-Host ''
+    Write-Host '  No items selected. Nothing to do.' -ForegroundColor Yellow
+    exit 0
+}
+
+Write-Log "Selected $($selectedIds.Count) item(s): $($selectedIds -join ', ')"
+
+# Build and persist plan
+$plan = New-Plan -AllItems $catalogItems -SelectedIds $selectedIds
+Write-JsonAtomic -Path $Paths.Plan -InputObject $plan
+Write-Log "Plan written: $($Paths.Plan)"
+
+# Build and persist initial state
+$state = New-State -Plan $plan
+Write-JsonAtomic -Path $Paths.State -InputObject $state
+Write-Log "State written: $($Paths.State)"
+
+# Show plan summary and confirm
+Clear-Host
+Show-PlanSummary -Plan $plan -AllItems $catalogItems
+
+Write-Host "  Artifacts will be saved to: $($Paths.Artifacts)" -ForegroundColor DarkGray
+Write-Host ''
+
+if ($mode -eq 'DryRun') {
+    Write-Host '  [DRY RUN] Proceeding without confirmation...' -ForegroundColor Magenta
+} else {
+    Write-Host '  Proceed with installation? (Y/N): ' -NoNewline
+    $confirm = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    Write-Host $confirm.Character
+
+    if ($confirm.Character -ne 'Y' -and $confirm.Character -ne 'y') {
+        Write-Log 'User declined confirmation.'
+        Write-Host '  Setup cancelled.' -ForegroundColor Yellow
+        exit 0
+    }
+}
+
+Write-Host ''
+Write-Log 'Executing plan...'
+
+# ---------------------------------------------------------------------------
+# 8. Execute
+# ---------------------------------------------------------------------------
+Invoke-Plan -Plan $plan -State $state `
+    -CatalogItems $catalogItems `
+    -RunContext   $RunContext `
+    -ResumeOption 'All'
+
+# ---------------------------------------------------------------------------
+# 9. Final report
+# ---------------------------------------------------------------------------
+Show-Report -State $state -Paths $Paths
+
+Write-Log '=== PC Setup finished ==='
+
+# ---------------------------------------------------------------------------
+# Helper: Convert PSCustomObject -> mutable hashtable for state/plan
+# ---------------------------------------------------------------------------
+
+function ConvertTo-MutableState {
+    param($StateObj)
+
+    $steps = foreach ($s in $StateObj.steps) {
+        [ordered]@{
+            id         = $s.id
+            status     = $s.status
+            startedAt  = $s.startedAt
+            endedAt    = $s.endedAt
+            error      = $s.error
+            notes      = if ($s.notes)      { @($s.notes)      } else { @() }
+            command    = $s.command
+            targetPath = $s.targetPath
+        }
+    }
+
+    return [ordered]@{
+        stateVersion = $StateObj.stateVersion
+        planHash     = $StateObj.planHash
+        startedAt    = $StateObj.startedAt
+        steps        = @($steps)
+    }
+}
+
+function ConvertTo-MutablePlan {
+    param($PlanObj)
+
+    $steps = foreach ($s in $PlanObj.steps) {
+        $step = [ordered]@{
+            id   = $s.id
+            type = $s.type
+        }
+        if ($null -ne $s.PSObject.Properties['parameters'] -and $null -ne $s.parameters) {
+            $step.parameters = @{ override = $s.parameters.override }
+        }
+        $step
+    }
+
+    return [ordered]@{
+        planVersion = $PlanObj.planVersion
+        generatedAt = $PlanObj.generatedAt
+        environment = [ordered]@{
+            computerName = $PlanObj.environment.computerName
+            osVersion    = $PlanObj.environment.osVersion
+        }
+        steps = @($steps)
+    }
+}

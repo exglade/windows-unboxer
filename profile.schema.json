@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "profile.schema.json",
+  "title": "pc-setup Profile",
+  "description": "Profile file for pre-selecting items and overriding per-app winget settings.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "selectedIds": {
+      "type": "array",
+      "description": "IDs of items to pre-check in the TUI checklist. Replaces the default category-based pre-selection. The user can still toggle items before confirming.",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+\\.[a-z0-9]+$",
+        "description": "Item ID in 'category.name' format (e.g. 'dev.vscode')."
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "description": "Per-item winget overrides keyed by item ID. Only applies to 'app' items; entries for 'tweak' items are ignored with a warning.",
+      "additionalProperties": {
+        "$ref": "#/definitions/appOverride"
+      }
+    }
+  },
+  "definitions": {
+    "appOverride": {
+      "type": "object",
+      "description": "Overridable winget fields for an app item. 'id' and 'source' are not overridable.",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["machine", "user"],
+          "description": "Override the install scope. 'machine' installs for all users; 'user' for the current user only."
+        },
+        "override": {
+          "type": ["string", "null"],
+          "description": "Override the raw installer argument string passed to winget via --override (e.g. '/SILENT /MERGETASKS=!runcode')."
+        }
+      }
+    }
+  }
+}

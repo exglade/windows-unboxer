@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "catalog.schema.json",
+  "title": "pc-setup Catalog",
+  "description": "Schema for catalog.json — defines apps and registry tweaks to apply during PC setup.",
+  "type": "object",
+  "required": ["version", "defaults", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version of this catalog file.",
+      "examples": ["1.0"]
+    },
+    "defaults": {
+      "type": "object",
+      "description": "Default values applied to all items unless overridden.",
+      "required": ["priority"],
+      "additionalProperties": false,
+      "properties": {
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Fallback execution priority when an item does not specify one. Lower values run first."
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "description": "Ordered list of catalog items (apps and tweaks).",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/item" }
+    }
+  },
+  "definitions": {
+    "item": {
+      "type": "object",
+      "required": ["id", "type", "category", "displayName", "requiresReboot"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+\\.[a-z0-9]+$",
+          "description": "Unique step identifier in 'category.name' format (e.g. 'dev.vscode')."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["app", "tweak"],
+          "description": "Item type — 'app' installs via winget; 'tweak' writes to the registry."
+        },
+        "category": {
+          "type": "string",
+          "description": "Display category used for grouping in the TUI checklist."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable label shown in the checklist and reports."
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Execution order — lower values run first. Inherits from defaults.priority when omitted."
+        },
+        "requiresReboot": {
+          "type": "boolean",
+          "description": "When true, the user is advised to reboot after this step completes."
+        }
+      },
+      "if": { "properties": { "type": { "const": "app" } }, "required": ["type"] },
+      "then": {
+        "required": ["winget"],
+        "properties": {
+          "winget": { "$ref": "#/definitions/wingetConfig" }
+        }
+      },
+      "else": {
+        "required": ["tweak"],
+        "properties": {
+          "tweak": { "$ref": "#/definitions/tweakConfig" }
+        }
+      }
+    },
+    "wingetConfig": {
+      "type": "object",
+      "description": "Winget install configuration for an app item.",
+      "required": ["id", "source", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Winget package identifier (e.g. 'Microsoft.VisualStudioCode')."
+        },
+        "source": {
+          "type": "string",
+          "description": "Winget source name (e.g. 'winget')."
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["machine", "user"],
+          "description": "'machine' installs for all users; 'user' installs for the current user only."
+        },
+        "override": {
+          "type": ["string", "null"],
+          "description": "Optional raw argument string passed verbatim to winget via --override."
+        }
+      }
+    },
+    "tweakConfig": {
+      "type": "object",
+      "description": "Registry tweak configuration for a tweak item.",
+      "required": ["kind", "actions", "restartExplorer"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["registry"],
+          "description": "Tweak kind. Currently only 'registry' is supported."
+        },
+        "actions": {
+          "type": "array",
+          "description": "One or more registry write operations to perform.",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/registryAction" }
+        },
+        "restartExplorer": {
+          "type": "boolean",
+          "description": "When true, Explorer is restarted after all actions in this tweak complete."
+        }
+      }
+    },
+    "registryAction": {
+      "type": "object",
+      "description": "A single registry key/value write operation.",
+      "required": ["path", "name", "type", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Full registry key path (e.g. 'HKCU\\\\Software\\\\...')."
+        },
+        "name": {
+          "type": "string",
+          "description": "Registry value name."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["DWord", "QWord", "String", "ExpandString", "MultiString", "Binary"],
+          "description": "Registry value type."
+        },
+        "value": {
+          "description": "Value to write. Use an integer for DWord/QWord, a string for String/ExpandString, an array of strings for MultiString."
+        }
+      }
+    }
+  }
+}

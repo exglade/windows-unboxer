@@ -1,0 +1,235 @@
+{
+  "$schema": "./catalog.schema.json",
+  "version": "1.0",
+  "defaults": { "priority": 999 },
+  "items": [
+    {
+      "id": "tweak.showExtensions",
+      "type": "tweak",
+      "category": "Tweaks",
+      "displayName": "Show file extensions",
+      "priority": 50,
+      "tweak": {
+        "kind": "registry",
+        "actions": [
+          {
+            "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+            "name": "HideFileExt",
+            "type": "DWord",
+            "value": 0
+          }
+        ],
+        "restartExplorer": true
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "tweak.showHiddenFiles",
+      "type": "tweak",
+      "category": "Tweaks",
+      "displayName": "Show hidden files",
+      "priority": 51,
+      "tweak": {
+        "kind": "registry",
+        "actions": [
+          {
+            "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+            "name": "Hidden",
+            "type": "DWord",
+            "value": 1
+          },
+          {
+            "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+            "name": "ShowSuperHidden",
+            "type": "DWord",
+            "value": 1
+          }
+        ],
+        "restartExplorer": true
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "core.chrome",
+      "type": "app",
+      "category": "Core",
+      "displayName": "Google Chrome",
+      "priority": 200,
+      "winget": {
+        "id": "Google.Chrome",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "core.7zip",
+      "type": "app",
+      "category": "Core",
+      "displayName": "7-Zip",
+      "priority": 210,
+      "winget": {
+        "id": "7zip.7zip",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "core.notion",
+      "type": "app",
+      "category": "Core",
+      "displayName": "Notion",
+      "priority": 220,
+      "winget": {
+        "id": "Notion.Notion",
+        "source": "winget",
+        "scope": "user",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "core.powershell",
+      "type": "app",
+      "category": "Core",
+      "displayName": "PowerShell",
+      "priority": 230,
+      "winget": {
+        "id": "Microsoft.PowerShell",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "dev.vscode",
+      "type": "app",
+      "category": "Dev",
+      "displayName": "VS Code",
+      "priority": 300,
+      "winget": {
+        "id": "Microsoft.VisualStudioCode",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "dev.git",
+      "type": "app",
+      "category": "Dev",
+      "displayName": "Git",
+      "priority": 310,
+      "winget": {
+        "id": "Git.Git",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "dev.nvm",
+      "type": "app",
+      "category": "Dev",
+      "displayName": "NVM for Windows",
+      "priority": 320,
+      "winget": {
+        "id": "CoreyButler.NVMforWindows",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "dev.ohmyposh",
+      "type": "app",
+      "category": "Dev",
+      "displayName": "Oh My Posh",
+      "priority": 330,
+      "winget": {
+        "id": "JanDeDobbeleer.OhMyPosh",
+        "source": "winget",
+        "scope": "user",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "productivity.foxit",
+      "type": "app",
+      "category": "Productivity",
+      "displayName": "Foxit Reader",
+      "priority": 500,
+      "winget": {
+        "id": "Foxit.FoxitReader",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "productivity.notepadpp",
+      "type": "app",
+      "category": "Productivity",
+      "displayName": "Notepad++",
+      "priority": 510,
+      "winget": {
+        "id": "Notepad++.Notepad++",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "productivity.powertoys",
+      "type": "app",
+      "category": "Productivity",
+      "displayName": "PowerToys",
+      "priority": 520,
+      "winget": {
+        "id": "Microsoft.PowerToys",
+        "source": "winget",
+        "scope": "machine",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "comm.discord",
+      "type": "app",
+      "category": "Comm",
+      "displayName": "Discord",
+      "priority": 900,
+      "winget": {
+        "id": "Discord.Discord",
+        "source": "winget",
+        "scope": "user",
+        "override": null
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "media.spotify",
+      "type": "app",
+      "category": "Media",
+      "displayName": "Spotify",
+      "priority": 910,
+      "winget": {
+        "id": "Spotify.Spotify",
+        "source": "winget",
+        "scope": "user",
+        "override": null
+      },
+      "requiresReboot": false
+    }
+  ]
+}

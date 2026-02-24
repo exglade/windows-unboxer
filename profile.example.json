@@ -1,0 +1,22 @@
+{
+  "$schema": "./profile.schema.json",
+
+  "selectedIds": [
+    "tweak.showExtensions",
+    "tweak.showHiddenFiles",
+    "core.chrome",
+    "core.powershell",
+    "dev.vscode",
+    "dev.git"
+  ],
+
+  "overrides": {
+    "dev.vscode": {
+      "scope": "user",
+      "override": "/SILENT /MERGETASKS=!runcode"
+    },
+    "core.chrome": {
+      "scope": "user"
+    }
+  }
+}
