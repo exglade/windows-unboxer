@@ -249,60 +249,64 @@ function Invoke-TuiChecklist {
     $scrollOffset = 0
 
     # --- Static render (banner + footer rendered once) ---
-    Clear-Host
-    Render-Banner -Title $Title -MaxWidth $maxWidth
-    Render-Footer -FooterTop $footerTop -MaxWidth $maxWidth
+    try {
+        Clear-Host
+        Render-Banner -Title $Title -MaxWidth $maxWidth
+        Render-Footer -FooterTop $footerTop -MaxWidth $maxWidth
 
-    # --- Initial menu render ---
-    Render-Checklist -Rows $rows -ItemIndices $itemIndices `
-        -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
-        -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
-
-    # --- Input loop ---
-    while ($true) {
-        $key = [Console]::ReadKey($true)
-
-        switch ($key.Key) {
-
-            'UpArrow' {
-                if ($focusIdx -gt 0) {
-                    $focusIdx--
-                    $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
-                        -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
-                }
-            }
-
-            'DownArrow' {
-                if ($focusIdx -lt ($itemIndices.Count - 1)) {
-                    $focusIdx++
-                    $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
-                        -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
-                }
-            }
-
-            'Spacebar' {
-                $ri  = $itemIndices[$focusIdx]
-                $row = $rows[$ri]
-                $row.Checked          = -not $row.Checked
-                $checkedMap[$row.Id]  = $row.Checked
-            }
-
-            'Enter' {
-                [Console]::CursorVisible = $true
-                $selected = $rows |
-                    Where-Object { $_.Kind -eq 'Item' -and $_.Checked } |
-                    ForEach-Object { $_.Id }
-                return @($selected)
-            }
-
-            'Escape' {
-                [Console]::CursorVisible = $true
-                return $null
-            }
-        }
-
+        # --- Initial menu render ---
         Render-Checklist -Rows $rows -ItemIndices $itemIndices `
             -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
             -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
+
+        # --- Input loop ---
+        while ($true) {
+            $key = [Console]::ReadKey($true)
+
+            switch ($key.Key) {
+
+                'UpArrow' {
+                    if ($focusIdx -gt 0) {
+                        $focusIdx--
+                        $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
+                            -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
+                    }
+                }
+
+                'DownArrow' {
+                    if ($focusIdx -lt ($itemIndices.Count - 1)) {
+                        $focusIdx++
+                        $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
+                            -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
+                    }
+                }
+
+                'Spacebar' {
+                    $ri  = $itemIndices[$focusIdx]
+                    $row = $rows[$ri]
+                    $row.Checked          = -not $row.Checked
+                    $checkedMap[$row.Id]  = $row.Checked
+                }
+
+                'Enter' {
+                    $selected = $rows |
+                        Where-Object { $_.Kind -eq 'Item' -and $_.Checked } |
+                        ForEach-Object { $_.Id }
+                    return @($selected)
+                }
+
+                'Escape' {
+                    return $null
+                }
+            }
+
+            Render-Checklist -Rows $rows -ItemIndices $itemIndices `
+                -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
+                -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
+        }
+    } finally {
+        # Ensure the cursor is always restored, even if an exception is thrown
+        # during rendering or input handling.
+        [Console]::CursorVisible = $true
     }
 }
