@@ -288,6 +288,8 @@ if ($Silent) {
         Write-Host '  Setup cancelled.' -ForegroundColor Yellow
         exit 0
     }
+
+    $selectedIds = @($selectedIds)
 }
 
 if ($selectedIds.Count -eq 0) {

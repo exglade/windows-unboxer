@@ -344,7 +344,7 @@ function Invoke-Plan {
                 -EndedAt   $endedAt `
                 -ErrorInfo $null `
                 -Notes     ($result.Notes) `
-                -Command   ($result.Command) `
+                -Command   ($result['Command']) `
                 -TargetPath $targetPath
             Write-Log "Step '$($step.id)' SUCCEEDED."
         } else {
@@ -354,7 +354,7 @@ function Invoke-Plan {
                 -EndedAt   $endedAt `
                 -ErrorInfo ($result.Error) `
                 -Notes     ($result.Notes) `
-                -Command   ($result.Command)
+                -Command   ($result['Command'])
             Write-Log "Step '$($step.id)' FAILED: $($result.Error.message)" -Level ERROR
 
             # Stop on first failure
