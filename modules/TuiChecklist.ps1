@@ -44,7 +44,6 @@ function script:Render-Banner {
     [Console]::ForegroundColor = $origFg
     Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 4 blank
 
-    [Console]::ForegroundColor = $origFg
 }
 
 function script:Render-Footer {
@@ -66,7 +65,7 @@ function script:Render-Footer {
     [Console]::ForegroundColor = $origFg
     Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 2 blank
 
-    [Console]::ForegroundColor = $origFg
+
 }
 
 function script:Clamp-ScrollOffset {
@@ -224,7 +223,7 @@ function Invoke-TuiChecklist {
     $menuTop      = $script:BANNER_HEIGHT     # = 5
     $footerTop    = $menuTop + $menuHeight
 
-    $maxWidth = [Math]::Max(40, [Console]::WindowWidth - 1)
+    $maxWidth = [Math]::Max(40, [Console]::WindowWidth - 2)
 
     # --- Build flat row list (headers + items interspersed) ---
     $checkedMap  = @{}
