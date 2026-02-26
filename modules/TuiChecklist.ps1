@@ -207,14 +207,7 @@ function Invoke-TuiChecklist {
     # --- Minimum height guard ---
     $windowHeight = [Console]::WindowHeight
     if ($windowHeight -lt $script:MIN_WINDOW_HEIGHT) {
-        [Console]::ForegroundColor = [ConsoleColor]::Red
-        Write-Host ""
-        Write-Host "  Error: terminal window is too small (height = $windowHeight lines)."
-        [Console]::ForegroundColor = [ConsoleColor]::Yellow
-        Write-Host "  Please expand the terminal to at least $($script:MIN_WINDOW_HEIGHT) lines and try again."
-        [Console]::ResetColor()
-        Write-Host ""
-        return $null
+        throw [System.InvalidOperationException]::new("Terminal window is too small (height = $windowHeight lines). Minimum required height is $($script:MIN_WINDOW_HEIGHT) lines.")
     }
 
     # --- Compute zone heights ---
