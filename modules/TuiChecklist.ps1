@@ -73,12 +73,18 @@ function script:Clamp-ScrollOffset {
     param(
         [int]   $FocusIdx,
         [array] $ItemIndices,
+        [array] $Rows,
         [int]   $ScrollOffset,
         [int]   $ViewportSize
     )
     $rowIdx = $ItemIndices[$FocusIdx]
-    if ($rowIdx -lt $ScrollOffset) {
-        return $rowIdx
+    # If a section header sits immediately above the focused item, include it in the viewport
+    $effectiveTop = $rowIdx
+    if ($rowIdx -gt 0 -and $Rows[$rowIdx - 1].Kind -eq 'Header') {
+        $effectiveTop = $rowIdx - 1
+    }
+    if ($effectiveTop -lt $ScrollOffset) {
+        return $effectiveTop
     }
     if ($rowIdx -ge ($ScrollOffset + $ViewportSize)) {
         return $rowIdx - $ViewportSize + 1
@@ -270,7 +276,7 @@ function Invoke-TuiChecklist {
                 if ($focusIdx -gt 0) {
                     $focusIdx--
                     $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
-                        -ItemIndices $itemIndices -ScrollOffset $scrollOffset -ViewportSize $viewportSize
+                        -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
                 }
             }
 
@@ -278,7 +284,7 @@ function Invoke-TuiChecklist {
                 if ($focusIdx -lt ($itemIndices.Count - 1)) {
                     $focusIdx++
                     $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
-                        -ItemIndices $itemIndices -ScrollOffset $scrollOffset -ViewportSize $viewportSize
+                        -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
                 }
             }
 
