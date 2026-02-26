@@ -66,8 +66,6 @@ function script:Show-Footer {
     [Console]::SetCursorPosition(0, $FooterTop + 2)
     [Console]::ForegroundColor = $origFg
     Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 2 blank
-
-
 }
 
 function script:Limit-ScrollOffset {
