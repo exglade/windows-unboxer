@@ -19,15 +19,13 @@ BeforeAll {
   "items": [
     {
       "id": "tweak.ext",
-      "type": "tweak",
+      "type": "script",
       "category": "Tweaks",
       "displayName": "Show extensions",
       "priority": 50,
-      "tweak": {
-        "kind": "registry",
-        "actions": [
-          { "path": "HKCU\\Foo", "name": "Bar", "type": "DWord", "value": 0 }
-        ],
+      "script": {
+        "path": "scripts/tweak-show-extensions.ps1",
+        "parameters": {},
         "restartExplorer": true
       },
       "requiresReboot": false
@@ -347,7 +345,7 @@ Describe 'Merge-ProfileOverrides' {
         $script:ChromeItem.winget.scope | Should -Be $originalScope
     }
 
-    It 'leaves tweak items unchanged and emits a warning' {
+    It 'leaves script items unchanged and emits a warning when non-parameter override is used' {
         $profile = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'tweak.ext' = [PSCustomObject]@{ scope = 'user' }
@@ -356,8 +354,8 @@ Describe 'Merge-ProfileOverrides' {
         Mock Write-Log {}
         $result = Merge-ProfileOverrides -Items $script:Items -Profile $profile
         $tweak  = $result | Where-Object { $_.id -eq 'tweak.ext' }
-        $tweak.type | Should -Be 'tweak'
-        Should -Invoke Write-Log -ParameterFilter { $Message -like "*override*ignored*" }
+        $tweak.type | Should -Be 'script'
+        Should -Invoke Write-Log -ParameterFilter { $Message -like "*no 'parameters'*ignored*" }
     }
 
     It 'ignores override entries for IDs not present in the catalog' {

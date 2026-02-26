@@ -171,13 +171,13 @@ function Invoke-AppStep {
 }
 
 # ---------------------------------------------------------------------------
-# Tweak step
+# Script step
 # ---------------------------------------------------------------------------
 
-function Invoke-TweakStepDispatch {
+function Invoke-ScriptStepDispatch {
     <#
     .SYNOPSIS
-        Handles a single 'tweak' step. Returns @{ Success=...; TargetPath=...; Error=...; ExplorerRequired=... }
+        Handles a single 'script' step. Returns @{ Success=...; ScriptPath=...; Error=...; ExplorerRequired=... }
     #>
     param(
         [Parameter(Mandatory)]
@@ -191,10 +191,10 @@ function Invoke-TweakStepDispatch {
     )
 
     if ($RunContext.Mode -eq 'Mock' -and $RunContext.FailStepId -and $RunContext.FailStepId -eq $Step.id) {
-        Write-Log "MOCK FAIL: $($Step.id) (simulated failure on tweak)" -Level WARN
+        Write-Log "MOCK FAIL: $($Step.id) (simulated failure on script)" -Level WARN
         return @{
             Success          = $false
-            TargetPaths      = @()
+            ScriptPath       = $null
             ExplorerRequired = $false
             Error            = @{ message = 'Simulated failure for testing' }
             Notes            = @('mock', 'simulatedFailure')
@@ -202,21 +202,19 @@ function Invoke-TweakStepDispatch {
     }
 
     try {
-        $result = Invoke-TweakStep -CatalogItem $CatalogItem -RunContext $RunContext
-        $notes  = @($RunContext.Mode.ToLower())
-        if ($RunContext.TweakTarget -eq 'Test') { $notes += 'testTarget' }
+        $result = Invoke-ScriptStep -CatalogItem $CatalogItem -RunContext $RunContext
 
         return @{
             Success          = $result.Success
-            TargetPaths      = $result.TargetPaths
-            ExplorerRequired = $result.ExplorerRequired
-            Error            = $null
-            Notes            = $notes
+            ScriptPath       = $result.ScriptPath
+            ExplorerRequired = if ($result.ExplorerRequired) { $result.ExplorerRequired } else { $false }
+            Error            = if ($result.Error) { $result.Error } else { $null }
+            Notes            = $result.Notes
         }
     } catch {
         return @{
             Success          = $false
-            TargetPaths      = @()
+            ScriptPath       = $null
             ExplorerRequired = $false
             Error            = @{ message = $_.Exception.Message }
             Notes            = @($RunContext.Mode.ToLower())
@@ -317,8 +315,8 @@ function Invoke-Plan {
         try {
             if ($step.type -eq 'app') {
                 $result = Invoke-AppStep -Step $step -CatalogItem $catalogItem -RunContext $RunContext -Paths $RunContext.Paths
-            } elseif ($step.type -eq 'tweak') {
-                $result = Invoke-TweakStepDispatch -Step $step -CatalogItem $catalogItem -RunContext $RunContext
+            } elseif ($step.type -eq 'script') {
+                $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $catalogItem -RunContext $RunContext
                 if ($result.ExplorerRequired -and $result.Success) {
                     $explorerRestartNeeded = $true
                 }

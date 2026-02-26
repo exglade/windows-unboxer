@@ -25,16 +25,16 @@ BeforeAll {
             $item | Add-Member -NotePropertyName 'winget' -NotePropertyValue (
                 [PSCustomObject]@{ id = 'Some.App'; source = 'winget'; scope = 'machine'; override = $null }
             )
-        } elseif ($Type -eq 'tweak') {
-            $item | Add-Member -NotePropertyName 'tweak' -NotePropertyValue (
-                [PSCustomObject]@{ kind = 'registry'; actions = @(); restartExplorer = $false }
+        } elseif ($Type -eq 'script') {
+            $item | Add-Member -NotePropertyName 'script' -NotePropertyValue (
+                [PSCustomObject]@{ path = 'scripts/test.ps1'; parameters = [PSCustomObject]@{}; restartExplorer = $false }
             )
         }
         return $item
     }
 
     $script:AllItems = @(
-        (script:Make-Item 'tweak.ext'    'Tweaks'       'Show extensions'    50  'tweak'),
+        (script:Make-Item 'tweak.ext'    'Tweaks'       'Show extensions'    50  'script'),
         (script:Make-Item 'core.chrome'  'Core'         'Google Chrome'     200  'app'),
         (script:Make-Item 'dev.vscode'   'Dev'          'VS Code'           300  'app'),
         (script:Make-Item 'prod.npp'     'Productivity' 'Notepad++'         510  'app')
@@ -117,9 +117,9 @@ Describe 'New-Plan' {
         $plan.steps[0].type | Should -Be 'app'
     }
 
-    It 'sets type=tweak on tweak steps' {
+    It 'sets type=script on script steps' {
         $plan = New-Plan -AllItems $script:AllItems -SelectedIds @('tweak.ext')
-        $plan.steps[0].type | Should -Be 'tweak'
+        $plan.steps[0].type | Should -Be 'script'
     }
 
     It 'includes environment.computerName' {

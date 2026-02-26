@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "catalog.schema.json",
   "title": "pc-setup Catalog",
-  "description": "Schema for catalog.json — defines apps and registry tweaks to apply during PC setup.",
+  "description": "Schema for catalog.json — defines apps and scripts to run during PC setup.",
   "type": "object",
   "required": ["version", "defaults", "items"],
   "additionalProperties": false,
@@ -27,7 +27,7 @@
     },
     "items": {
       "type": "array",
-      "description": "Ordered list of catalog items (apps and tweaks).",
+      "description": "Ordered list of catalog items (apps and scripts).",
       "minItems": 1,
       "items": { "$ref": "#/definitions/item" }
     }
@@ -44,8 +44,8 @@
         },
         "type": {
           "type": "string",
-          "enum": ["app", "tweak"],
-          "description": "Item type — 'app' installs via winget; 'tweak' writes to the registry."
+          "enum": ["app", "script"],
+          "description": "Item type — 'app' installs via winget; 'script' runs a PowerShell script."
         },
         "category": {
           "type": "string",
@@ -65,19 +65,26 @@
           "description": "When true, the user is advised to reboot after this step completes."
         }
       },
-      "if": { "properties": { "type": { "const": "app" } }, "required": ["type"] },
-      "then": {
-        "required": ["winget"],
-        "properties": {
-          "winget": { "$ref": "#/definitions/wingetConfig" }
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "app" } }, "required": ["type"] },
+          "then": {
+            "required": ["winget"],
+            "properties": {
+              "winget": { "$ref": "#/definitions/wingetConfig" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "script" } }, "required": ["type"] },
+          "then": {
+            "required": ["script"],
+            "properties": {
+              "script": { "$ref": "#/definitions/scriptConfig" }
+            }
+          }
         }
-      },
-      "else": {
-        "required": ["tweak"],
-        "properties": {
-          "tweak": { "$ref": "#/definitions/tweakConfig" }
-        }
-      }
+      ]
     },
     "wingetConfig": {
       "type": "object",
@@ -104,50 +111,25 @@
         }
       }
     },
-    "tweakConfig": {
+    "scriptConfig": {
       "type": "object",
-      "description": "Registry tweak configuration for a tweak item.",
-      "required": ["kind", "actions", "restartExplorer"],
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "type": "string",
-          "enum": ["registry"],
-          "description": "Tweak kind. Currently only 'registry' is supported."
-        },
-        "actions": {
-          "type": "array",
-          "description": "One or more registry write operations to perform.",
-          "minItems": 1,
-          "items": { "$ref": "#/definitions/registryAction" }
-        },
-        "restartExplorer": {
-          "type": "boolean",
-          "description": "When true, Explorer is restarted after all actions in this tweak complete."
-        }
-      }
-    },
-    "registryAction": {
-      "type": "object",
-      "description": "A single registry key/value write operation.",
-      "required": ["path", "name", "type", "value"],
+      "description": "PowerShell script configuration for a script item.",
+      "required": ["path"],
       "additionalProperties": false,
       "properties": {
         "path": {
           "type": "string",
-          "description": "Full registry key path (e.g. 'HKCU\\\\Software\\\\...')."
+          "description": "Relative path to the PowerShell script file (e.g. 'scripts/tweak-show-extensions.ps1')."
         },
-        "name": {
-          "type": "string",
-          "description": "Registry value name."
+        "parameters": {
+          "type": "object",
+          "description": "Optional key/value parameters passed to the script as a hashtable.",
+          "additionalProperties": true
         },
-        "type": {
-          "type": "string",
-          "enum": ["DWord", "QWord", "String", "ExpandString", "MultiString", "Binary"],
-          "description": "Registry value type."
-        },
-        "value": {
-          "description": "Value to write. Use an integer for DWord/QWord, a string for String/ExpandString, an array of strings for MultiString."
+        "restartExplorer": {
+          "type": "boolean",
+          "description": "When true, Explorer is restarted after the script completes.",
+          "default": false
         }
       }
     }

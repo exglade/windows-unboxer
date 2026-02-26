@@ -4,6 +4,7 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Tweaks.ps1')
+    . (Join-Path $PSScriptRoot '..\modules\ScriptRunner.ps1')
     . (Join-Path $PSScriptRoot '..\modules\PlanState.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Executor.ps1')
 
@@ -35,14 +36,14 @@ BeforeAll {
         }
     }
 
-    function script:Tweak-Item {
+    function script:Script-Item {
         param([string]$Id = 'tweak.ext')
         [PSCustomObject]@{
             id   = $Id
-            type = 'tweak'
-            tweak = [PSCustomObject]@{
-                kind            = 'registry'
-                actions         = @([PSCustomObject]@{ path='HKCU\Foo'; name='Bar'; type='DWord'; value=0 })
+            type = 'script'
+            script = [PSCustomObject]@{
+                path            = 'scripts/tweak-show-extensions.ps1'
+                parameters      = [PSCustomObject]@{}
                 restartExplorer = $false
             }
         }
@@ -53,9 +54,9 @@ BeforeAll {
         [ordered]@{ id = $Id; type = 'app'; parameters = @{ override = $null } }
     }
 
-    function script:New-TweakStep {
+    function script:New-ScriptStep {
         param([string]$Id = 'tweak.ext')
-        [ordered]@{ id = $Id; type = 'tweak' }
+        [ordered]@{ id = $Id; type = 'script'; parameters = @{} }
     }
 
     function script:Make-TestPaths {
@@ -269,71 +270,64 @@ Describe 'Invoke-AppStep - Mock mode simulated failure' {
 }
 
 # ---------------------------------------------------------------------------
-# Invoke-TweakStepDispatch  — DryRun mode
+# Invoke-ScriptStepDispatch  — DryRun mode
 # ---------------------------------------------------------------------------
 
-Describe 'Invoke-TweakStepDispatch - DryRun mode' {
+Describe 'Invoke-ScriptStepDispatch - DryRun mode' {
 
     BeforeAll {
-        Mock Set-RegistryValue {}
+        Mock Invoke-ScriptStep {
+            return @{ Success = $true; ScriptPath = 'scripts/test.ps1'; ExplorerRequired = $false; Notes = @('dryRun') }
+        }
     }
 
     It 'returns Success=$true' {
         $ctx    = script:Make-Ctx -Mode 'DryRun'
-        $step   = script:New-TweakStep
-        $item   = script:Tweak-Item
-        $result = Invoke-TweakStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
+        $step   = script:New-ScriptStep
+        $item   = script:Script-Item
+        $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
-    }
-
-    It 'does not write to registry in DryRun mode' {
-        $ctx  = script:Make-Ctx -Mode 'DryRun'
-        $step = script:New-TweakStep
-        $item = script:Tweak-Item
-        Invoke-TweakStepDispatch -Step $step -CatalogItem $item -RunContext $ctx | Out-Null
-        Should -Invoke Set-RegistryValue -Times 0
     }
 
     It 'includes mode name in notes' {
         $ctx    = script:Make-Ctx -Mode 'DryRun'
-        $step   = script:New-TweakStep
-        $item   = script:Tweak-Item
-        $result = Invoke-TweakStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
-        $result.Notes | Should -Contain 'dryrun'
+        $step   = script:New-ScriptStep
+        $item   = script:Script-Item
+        $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
+        $result.Notes | Should -Contain 'dryRun'
     }
 }
 
 # ---------------------------------------------------------------------------
-# Invoke-TweakStepDispatch  — Mock mode simulated failure
+# Invoke-ScriptStepDispatch  — Mock mode simulated failure
 # ---------------------------------------------------------------------------
 
-Describe 'Invoke-TweakStepDispatch - Mock mode simulated failure' {
-
-    BeforeAll {
-        Mock Set-RegistryValue {}
-    }
+Describe 'Invoke-ScriptStepDispatch - Mock mode simulated failure' {
 
     It 'returns Success=$false when FailStepId matches' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -TweakTarget 'Test' -FailStepId 'tweak.ext'
-        $step   = script:New-TweakStep 'tweak.ext'
-        $item   = script:Tweak-Item 'tweak.ext'
-        $result = Invoke-TweakStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
+        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
+        $step   = script:New-ScriptStep 'tweak.ext'
+        $item   = script:Script-Item 'tweak.ext'
+        $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeFalse
     }
 
     It 'sets error message on simulated failure' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -TweakTarget 'Test' -FailStepId 'tweak.ext'
-        $step   = script:New-TweakStep 'tweak.ext'
-        $item   = script:Tweak-Item 'tweak.ext'
-        $result = Invoke-TweakStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
+        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
+        $step   = script:New-ScriptStep 'tweak.ext'
+        $item   = script:Script-Item 'tweak.ext'
+        $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Error.message | Should -Match 'Simulated'
     }
 
     It 'does not fail a non-matching step' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -TweakTarget 'Test' -FailStepId 'tweak.ext'
-        $step   = script:New-TweakStep 'tweak.other'
-        $item   = script:Tweak-Item 'tweak.other'
-        $result = Invoke-TweakStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
+        Mock Invoke-ScriptStep {
+            return @{ Success = $true; ScriptPath = 'scripts/test.ps1'; ExplorerRequired = $false; Notes = @('mock') }
+        }
+        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
+        $step   = script:New-ScriptStep 'tweak.other'
+        $item   = script:Script-Item 'tweak.other'
+        $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }
 }

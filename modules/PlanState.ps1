@@ -53,10 +53,17 @@ function New-Plan {
                     override = if ($item.winget -and $null -ne $item.winget.override) { $item.winget.override } else { $null }
                 }
             }
-        } elseif ($item.type -eq 'tweak') {
+        } elseif ($item.type -eq 'script') {
+            $scriptParams = @{}
+            if ($null -ne $item.script -and $null -ne $item.script.PSObject.Properties['parameters'] -and $null -ne $item.script.parameters) {
+                foreach ($prop in $item.script.parameters.PSObject.Properties) {
+                    $scriptParams[$prop.Name] = $prop.Value
+                }
+            }
             [ordered]@{
-                id   = $item.id
-                type = 'tweak'
+                id         = $item.id
+                type       = 'script'
+                parameters = $scriptParams
             }
         } else {
             [ordered]@{
