@@ -350,7 +350,6 @@ Describe 'Invoke-Plan - DryRun full run' {
 
     BeforeAll {
         Mock Get-OsVersion  { 'Windows 11 Pro' }
-        Mock Set-RegistryValue {}
         Mock Invoke-ExplorerRestartPrompt {}
 
         $allItems = @(
@@ -410,7 +409,6 @@ Describe 'Invoke-Plan - DryRun full run' {
 Describe 'Invoke-Plan - Mock mode stop-on-failure' {
 
     BeforeAll {
-        Mock Set-RegistryValue {}
         Mock Invoke-ExplorerRestartPrompt {}
 
         $allItems = @(
@@ -473,7 +471,6 @@ Describe 'Invoke-Plan - Mock mode stop-on-failure' {
 Describe 'Invoke-Plan - ResumePending skips already-Succeeded steps' {
 
     BeforeAll {
-        Mock Set-RegistryValue {}
         Mock Invoke-ExplorerRestartPrompt {}
 
         # Artificial: make the first step already Succeeded in the state before the run

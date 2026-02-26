@@ -168,7 +168,7 @@ modules/
   PlanState.ps1      # Build plan/state, resume menu, report
   ScriptRunner.ps1   # PowerShell script runner
   TuiChecklist.ps1   # Interactive terminal checklist UI
-  Tweaks.ps1         # Registry helpers, Explorer restart
+  Tweaks.ps1         # Explorer restart helpers
 scripts/             # PowerShell scripts for catalog script items
 docs/                # Documentation
 setup-artifacts/     # Logs, plan.json, state.json (generated at runtime)
