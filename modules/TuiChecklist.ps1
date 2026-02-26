@@ -4,70 +4,169 @@
 Set-StrictMode -Version Latest
 
 # ---------------------------------------------------------------------------
+# Layout constants
+# ---------------------------------------------------------------------------
+
+$script:BANNER_HEIGHT    = 5   # rows 0-4
+$script:MENU_MIN_HEIGHT  = 5   # minimum rows for the scrollable menu zone
+$script:FOOTER_HEIGHT    = 3   # rows below menu
+$script:MIN_WINDOW_HEIGHT = $script:BANNER_HEIGHT + $script:MENU_MIN_HEIGHT + $script:FOOTER_HEIGHT  # 13
+
+# ---------------------------------------------------------------------------
 # Internal rendering helpers
 # ---------------------------------------------------------------------------
 
+function script:Render-Banner {
+    param(
+        [string] $Title,
+        [int]    $MaxWidth
+    )
+    # 5 lines: blank / title / blank / rule / blank
+    [Console]::CursorVisible = $false
+    $origFg = [Console]::ForegroundColor
+
+    [Console]::SetCursorPosition(0, 0)
+    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 0 blank
+
+    [Console]::SetCursorPosition(0, 1)
+    [Console]::ForegroundColor = [ConsoleColor]::White
+    Write-Host "  $Title".PadRight($MaxWidth) -NoNewline                   # row 1 title
+
+    [Console]::SetCursorPosition(0, 2)
+    [Console]::ForegroundColor = $origFg
+    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 2 blank
+
+    [Console]::SetCursorPosition(0, 3)
+    [Console]::ForegroundColor = [ConsoleColor]::DarkGray
+    Write-Host ("  " + ([string][char]0x2500) * [Math]::Max(0, $MaxWidth - 4)).PadRight($MaxWidth) -NoNewline  # row 3 rule
+
+    [Console]::SetCursorPosition(0, 4)
+    [Console]::ForegroundColor = $origFg
+    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 4 blank
+
+    [Console]::ForegroundColor = $origFg
+}
+
+function script:Render-Footer {
+    param(
+        [int] $FooterTop,
+        [int] $MaxWidth
+    )
+    # 3 lines: rule / instructions / blank
+    $origFg = [Console]::ForegroundColor
+
+    [Console]::SetCursorPosition(0, $FooterTop)
+    [Console]::ForegroundColor = [ConsoleColor]::DarkGray
+    Write-Host ("  " + ([string][char]0x2500) * [Math]::Max(0, $MaxWidth - 4)).PadRight($MaxWidth) -NoNewline  # row 0 rule
+
+    [Console]::SetCursorPosition(0, $FooterTop + 1)
+    Write-Host '  UP/DOWN: move   SPACE: toggle   ENTER: confirm   ESC: cancel'.PadRight($MaxWidth) -NoNewline  # row 1 instructions
+
+    [Console]::SetCursorPosition(0, $FooterTop + 2)
+    [Console]::ForegroundColor = $origFg
+    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 2 blank
+
+    [Console]::ForegroundColor = $origFg
+}
+
+function script:Clamp-ScrollOffset {
+    param(
+        [int]   $FocusIdx,
+        [array] $ItemIndices,
+        [int]   $ScrollOffset,
+        [int]   $ViewportSize
+    )
+    $rowIdx = $ItemIndices[$FocusIdx]
+    if ($rowIdx -lt $ScrollOffset) {
+        return $rowIdx
+    }
+    if ($rowIdx -ge ($ScrollOffset + $ViewportSize)) {
+        return $rowIdx - $ViewportSize + 1
+    }
+    return $ScrollOffset
+}
+
 function script:Render-Checklist {
     param(
-        [array]  $Rows,       # flat list: @{Kind='Header'|'Item'; ...}
-        [int]    $CursorIdx,  # index into $Rows for current cursor (Items only)
-        [int[]]  $ItemIndices # indices in $Rows that are selectable Items
+        [array] $Rows,
+        [array] $ItemIndices,
+        [int]   $FocusIdx,     # index into $ItemIndices
+        [int]   $ScrollOffset, # first $Rows index in viewport
+        [int]   $MenuTop,      # absolute console row where menu zone starts
+        [int]   $MenuHeight,   # total rows in menu zone
+        [int]   $MaxWidth
     )
 
     [Console]::CursorVisible = $false
     $origFg = [Console]::ForegroundColor
     $origBg = [Console]::BackgroundColor
 
-    $topRow   = [Console]::CursorTop
-    $maxWidth = [Console]::WindowWidth - 2
-    if ($maxWidth -lt 40) { $maxWidth = 40 }
+    $viewportSize  = $MenuHeight - 2   # rows 1..(MenuHeight-2) hold actual items
+    $cursorRowIdx  = $ItemIndices[$FocusIdx]
 
-    $lineNum = 0
-    foreach ($row in $Rows) {
-        [Console]::SetCursorPosition(0, $topRow + $lineNum)
+    # --- top indicator (row 0 of menu zone) ---
+    [Console]::SetCursorPosition(0, $MenuTop)
+    if ($ScrollOffset -gt 0) {
+        [Console]::ForegroundColor = [ConsoleColor]::DarkGray
+        Write-Host "  $([char]0x2191) ... ($ScrollOffset more above)".PadRight($MaxWidth) -NoNewline
+    } else {
+        [Console]::ForegroundColor = $origFg
+        Write-Host ''.PadRight($MaxWidth) -NoNewline
+    }
+
+    # --- visible rows ---
+    for ($slot = 0; $slot -lt $viewportSize; $slot++) {
+        $rowIdx = $ScrollOffset + $slot
+        [Console]::SetCursorPosition(0, $MenuTop + 1 + $slot)
+
+        if ($rowIdx -ge $Rows.Count) {
+            # past end — blank padding
+            [Console]::ForegroundColor = $origFg
+            [Console]::BackgroundColor = $origBg
+            Write-Host ''.PadRight($MaxWidth) -NoNewline
+            continue
+        }
+
+        $row = $Rows[$rowIdx]
 
         if ($row.Kind -eq 'Header') {
-            # Category header — not selectable
-            $label = "  -- $($row.Category) --"
-            $pad   = $label.PadRight($maxWidth)
             [Console]::ForegroundColor = [ConsoleColor]::Cyan
             [Console]::BackgroundColor = $origBg
-            Write-Host $pad -NoNewline
+            $label = "  -- $($row.Category) --"
+            Write-Host $label.PadRight($MaxWidth) -NoNewline
         } else {
-            $isSelected = $row.Checked
-            $isCursor   = ($row.RowIndex -eq $CursorIdx)
-
-            $checkMark  = if ($isSelected) { '[x]' } else { '[ ]' }
-            $label      = "$checkMark $($row.DisplayName)"
-            $pad        = $label.PadRight($maxWidth)
+            $isCursor  = ($row.RowIndex -eq $cursorRowIdx)
+            $checkMark = if ($row.Checked) { '[x]' } else { '[ ]' }
+            $label     = "$checkMark $($row.DisplayName)"
 
             if ($isCursor) {
                 [Console]::ForegroundColor = [ConsoleColor]::Black
                 [Console]::BackgroundColor = [ConsoleColor]::Cyan
-            } elseif ($isSelected) {
+            } elseif ($row.Checked) {
                 [Console]::ForegroundColor = [ConsoleColor]::Green
                 [Console]::BackgroundColor = $origBg
             } else {
                 [Console]::ForegroundColor = $origFg
                 [Console]::BackgroundColor = $origBg
             }
-            Write-Host $pad -NoNewline
+            Write-Host $label.PadRight($MaxWidth) -NoNewline
         }
-
-        $lineNum++
     }
 
-    # Reset colors and move below list
+    # --- bottom indicator (last row of menu zone) ---
     [Console]::ForegroundColor = $origFg
     [Console]::BackgroundColor = $origBg
-    [Console]::SetCursorPosition(0, $topRow + $lineNum)
-    Write-Host ''
+    [Console]::SetCursorPosition(0, $MenuTop + $MenuHeight - 1)
+    $remaining = $Rows.Count - ($ScrollOffset + $viewportSize)
+    if ($remaining -gt 0) {
+        [Console]::ForegroundColor = [ConsoleColor]::DarkGray
+        Write-Host "  $([char]0x2193) ... ($remaining more below)".PadRight($MaxWidth) -NoNewline
+    } else {
+        Write-Host ''.PadRight($MaxWidth) -NoNewline
+    }
 
-    # Instructions row
-    [Console]::SetCursorPosition(0, $topRow + $lineNum + 1)
-    [Console]::ForegroundColor = [ConsoleColor]::DarkGray
-    Write-Host '  UP/DOWN: move   SPACE: toggle   ENTER: confirm   ESC: cancel    ' -NoNewline
     [Console]::ForegroundColor = $origFg
+    [Console]::BackgroundColor = $origBg
 }
 
 # ---------------------------------------------------------------------------
@@ -100,15 +199,35 @@ function Invoke-TuiChecklist {
         return @()
     }
 
-    # Build a lookup of checked states
-    $checkedMap = @{}
+    # --- Minimum height guard ---
+    $windowHeight = [Console]::WindowHeight
+    if ($windowHeight -lt $script:MIN_WINDOW_HEIGHT) {
+        [Console]::ForegroundColor = [ConsoleColor]::Red
+        Write-Host ""
+        Write-Host "  Error: terminal window is too small (height = $windowHeight lines)."
+        [Console]::ForegroundColor = [ConsoleColor]::Yellow
+        Write-Host "  Please expand the terminal to at least $($script:MIN_WINDOW_HEIGHT) lines and try again."
+        [Console]::ResetColor()
+        Write-Host ""
+        return $null
+    }
+
+    # --- Compute zone heights ---
+    $menuHeight   = $windowHeight - $script:BANNER_HEIGHT - $script:FOOTER_HEIGHT
+    $viewportSize = $menuHeight - 2           # slots between the two indicators
+    $menuTop      = $script:BANNER_HEIGHT     # = 5
+    $footerTop    = $menuTop + $menuHeight
+
+    $maxWidth = [Math]::Max(40, [Console]::WindowWidth - 1)
+
+    # --- Build flat row list (headers + items interspersed) ---
+    $checkedMap  = @{}
     foreach ($item in $Items) {
         $checkedMap[$item.id] = ($PreselectedIds -contains $item.id)
     }
 
-    # Build flat row list (headers + items interspersed)
     $rows        = [System.Collections.Generic.List[hashtable]]::new()
-    $itemIndices = [System.Collections.Generic.List[int]]::new()  # row indices that are Items
+    $itemIndices = [System.Collections.Generic.List[int]]::new()
     $lastCat     = $null
 
     foreach ($item in $Items) {
@@ -127,59 +246,50 @@ function Invoke-TuiChecklist {
         $itemIndices.Add($rowIdx)
     }
 
-    # Cursor tracks index into $itemIndices (which item is focused)
-    $focusIdx = 0  # index into $itemIndices list
+    # --- Initial state ---
+    $focusIdx    = 0
+    $scrollOffset = 0
 
-    # Clear area and print header
+    # --- Static render (banner + footer rendered once) ---
     Clear-Host
-    $headerLines = 3
-    Write-Host ''
-    [Console]::ForegroundColor = [ConsoleColor]::White
-    Write-Host "  $Title" -NoNewline
-    [Console]::ResetColor()
-    Write-Host ''
-    Write-Host ''
+    Render-Banner -Title $Title -MaxWidth $maxWidth
+    Render-Footer -FooterTop $footerTop -MaxWidth $maxWidth
 
-    $startTop = [Console]::CursorTop
+    # --- Initial menu render ---
+    Render-Checklist -Rows $rows -ItemIndices $itemIndices `
+        -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
+        -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
 
-    # Ensure enough console buffer lines exist (scroll if needed)
-    $neededLines = $rows.Count + 3
-    $bufLines    = [Console]::BufferHeight - $startTop - 1
-    if ($neededLines -gt $bufLines) {
-        # Print blank lines to scroll
-        for ($i = 0; $i -lt ($neededLines - $bufLines); $i++) {
-            Write-Host ''
-        }
-        [Console]::SetCursorPosition(0, $startTop)
-    }
-
-    # Initial render
-    $cursorRowIdx = $itemIndices[$focusIdx]
-    Render-Checklist -Rows $rows -CursorIdx $cursorRowIdx -ItemIndices $itemIndices
-
-    # Input loop
+    # --- Input loop ---
     while ($true) {
-        $key = [Console]::ReadKey($true)  # intercept = true (don't echo)
+        $key = [Console]::ReadKey($true)
 
         switch ($key.Key) {
 
             'UpArrow' {
-                if ($focusIdx -gt 0) { $focusIdx-- }
+                if ($focusIdx -gt 0) {
+                    $focusIdx--
+                    $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
+                        -ItemIndices $itemIndices -ScrollOffset $scrollOffset -ViewportSize $viewportSize
+                }
             }
 
             'DownArrow' {
-                if ($focusIdx -lt ($itemIndices.Count - 1)) { $focusIdx++ }
+                if ($focusIdx -lt ($itemIndices.Count - 1)) {
+                    $focusIdx++
+                    $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
+                        -ItemIndices $itemIndices -ScrollOffset $scrollOffset -ViewportSize $viewportSize
+                }
             }
 
             'Spacebar' {
-                $ri = $itemIndices[$focusIdx]
+                $ri  = $itemIndices[$focusIdx]
                 $row = $rows[$ri]
-                $row.Checked = -not $row.Checked
-                $checkedMap[$row.Id] = $row.Checked
+                $row.Checked          = -not $row.Checked
+                $checkedMap[$row.Id]  = $row.Checked
             }
 
             'Enter' {
-                # Confirm — return selected IDs
                 [Console]::CursorVisible = $true
                 $selected = $rows |
                     Where-Object { $_.Kind -eq 'Item' -and $_.Checked } |
@@ -193,7 +303,8 @@ function Invoke-TuiChecklist {
             }
         }
 
-        $cursorRowIdx = $itemIndices[$focusIdx]
-        Render-Checklist -Rows $rows -CursorIdx $cursorRowIdx -ItemIndices $itemIndices
+        Render-Checklist -Rows $rows -ItemIndices $itemIndices `
+            -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
+            -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
     }
 }
