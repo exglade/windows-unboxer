@@ -22,8 +22,11 @@ function Resolve-ScriptPath {
     )
 
     $fullPath = Join-Path $RootDir $RelativePath
-    if (-not (Test-Path $fullPath)) {
-        throw "Script not found: $fullPath"
+    if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+        throw "Script not found or is not a file: $fullPath"
+    }
+    if ([System.IO.Path]::GetExtension($fullPath) -ne '.ps1') {
+        throw "Script path must point to a .ps1 file: $fullPath"
     }
     return $fullPath
 }
@@ -92,18 +95,36 @@ function Invoke-ScriptStep {
 
     # ---- DryRun ----
     if ($isDryRun) {
-        Write-Log "WOULD RUN SCRIPT: $scriptPath" -Level INFO
+        Write-Log "DRY RUN SCRIPT: $scriptPath" -Level INFO
         if ($parameters.Count -gt 0) {
             Write-Log "  Parameters: $($parameters | ConvertTo-Json -Compress)" -Level INFO
         }
         if ($explorerRequired) {
             Write-Log "WOULD restart Explorer (restartExplorer=true on '$itemId')" -Level INFO
         }
-        return @{
-            Success          = $true
-            ScriptPath       = $scriptPath
-            ExplorerRequired = $explorerRequired
-            Notes            = @('dryRun')
+        try {
+            $output = & $scriptPath -Parameters $parameters -DryRun:$true
+            if ($output) {
+                foreach ($line in @($output)) {
+                    Write-Log "  $line" -Level INFO
+                }
+            }
+            Write-Log "  -> Dry run completed (no changes applied)." -Level INFO
+            return @{
+                Success          = $true
+                ScriptPath       = $scriptPath
+                ExplorerRequired = $explorerRequired
+                Notes            = @('dryRun')
+            }
+        } catch {
+            Write-Log "  -> Dry run FAILED: $($_.Exception.Message)" -Level ERROR
+            return @{
+                Success          = $false
+                ScriptPath       = $scriptPath
+                ExplorerRequired = $false
+                Error            = @{ message = $_.Exception.Message }
+                Notes            = @('dryRun')
+            }
         }
     }
 
