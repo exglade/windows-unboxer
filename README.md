@@ -76,11 +76,15 @@ Use `↑`/`↓` to navigate, `Space` to toggle items, `Enter` to confirm.
 | `-Mock` | Fake execution — useful for testing state and resume logic |
 | `-TweakTarget Test` | Redirect registry writes to a safe test key (use with `-Mock`) |
 | `-FailStepId <id>` | Simulate a failure on a specific step ID (use with `-Mock`) |
+| `-ProfilePath <path>` | Load a profile JSON file to pre-select items and apply per-app overrides |
+| `-Silent` | Skip all prompts — runs fully unattended using catalog defaults or a profile |
 
 ```powershell
 .\Setup.ps1 -DryRun
 .\Setup.ps1 -Mock -TweakTarget Test
 .\Setup.ps1 -Mock -FailStepId dev.vscode
+.\Setup.ps1 -Silent
+.\Setup.ps1 -Silent -ProfilePath .\profile.example.json
 ```
 
 If a run is interrupted, re-running `Setup.ps1` detects the saved state and offers to **resume pending steps**, **re-run failed steps**, **start over**, or **view the last report**.
@@ -108,7 +112,7 @@ Copy `profile.example.json` as a starting point and adjust to your needs. Both f
 
 | Field | Description |
 |---|---|
-| `selectedIds` | Items pre-checked in the TUI. Replaces the default category-based selection. The user can still toggle items before confirming. |
+| `selectedIds` | Items pre-checked in the TUI. Replaces the default category-based selection. The user can still toggle items before confirming. With `-Silent`, the TUI is skipped entirely and these IDs are used as-is. |
 | `overrides` | Per-app winget overrides keyed by item ID. Only `scope` and `override` can be changed; `id` and `source` are fixed. Silently ignored for `tweak` items. |
 
 ## Catalog
