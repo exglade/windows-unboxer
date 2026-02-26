@@ -2,7 +2,7 @@
 # TuiChecklist.Tests.ps1 - Unit tests for modules/TuiChecklist.ps1
 #
 # Focuses on the pure-logic helpers that do not interact with the console:
-#   - script:Clamp-ScrollOffset
+#   - script:Limit-ScrollOffset
 #   - Layout constant values and the viewport-size arithmetic used inside
 #     Invoke-TuiChecklist
 
@@ -131,10 +131,10 @@ Describe 'Viewport size arithmetic' {
 }
 
 # ===========================================================================
-# Clamp-ScrollOffset
+# Limit-ScrollOffset
 # ===========================================================================
 
-Describe 'Clamp-ScrollOffset' {
+Describe 'Limit-ScrollOffset' {
 
     # ------------------------------------------------------------------
     # Single-item edge case
@@ -147,14 +147,14 @@ Describe 'Clamp-ScrollOffset' {
         }
 
         It 'returns 0 regardless of viewportSize' {
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 0 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 1
             $result | Should -Be 0
         }
 
         It 'returns 0 with large viewportSize' {
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 0 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 100
             $result | Should -Be 0
@@ -171,7 +171,7 @@ Describe 'Clamp-ScrollOffset' {
         }
 
         It 'keeps scrollOffset 0 for first item when viewport is large' {
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 0 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 10
             $result | Should -Be 0
@@ -179,7 +179,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'keeps scrollOffset 0 for last item when viewport is large' {
             $lastFocus = $script:td.ItemIndices.Count - 1
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx $lastFocus -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 10
             $result | Should -Be 0
@@ -197,7 +197,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'scrolls forward so focused item becomes the last visible row' {
             # viewport shows rows [0..2] (size=3), focus moves to item d (rowIdx=3)
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 3 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 3
             # rowIdx 3 >= 0+3, so new offset = 3 - 3 + 1 = 1
@@ -205,7 +205,7 @@ Describe 'Clamp-ScrollOffset' {
         }
 
         It 'scrolls to the last item (rowIdx=4) with viewport 3' {
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 4 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 3
             # 4 - 3 + 1 = 2
@@ -214,7 +214,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'does not change offset when item is exactly at the bottom edge' {
             # offset=0, viewport=3 → visible rows 0,1,2; item at rowIdx=2 is at edge
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 2 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 3
             $result | Should -Be 0
@@ -232,14 +232,14 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'scrolls back so focused item becomes the first visible row' {
             # Currently scrolled to offset=3 (showing d,e), move focus to item b (rowIdx=1)
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 1 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 3 -ViewportSize 3
             $result | Should -Be 1
         }
 
         It 'returns 0 when scrolling back to the first item' {
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 0 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 3 -ViewportSize 3
             $result | Should -Be 0
@@ -247,7 +247,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'does not change offset when item is exactly at the top edge' {
             # offset=1, focused item rowIdx=1 == offset → already at top
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 1 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 1 -ViewportSize 3
             $result | Should -Be 1
@@ -264,7 +264,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'keeps offset unchanged for middle item' {
             # offset=1, viewport=3 → visible rows 1,2,3; focus on item c (rowIdx=2)
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 2 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 1 -ViewportSize 3
             $result | Should -Be 1
@@ -286,7 +286,7 @@ Describe 'Clamp-ScrollOffset' {
             # effectiveTop = 3.  With scrollOffset=3, effectiveTop(3) < offset(3) is false,
             # and rowIdx(4) < offset+viewportSize(3+3=6) is true → no scroll needed.
             # But if offset=4: effectiveTop(3) < 4 → scroll up to 3.
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 2 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 4 -ViewportSize 3
             $result | Should -Be 3
@@ -294,7 +294,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'does not pull in header when header is above a visible item with room above' {
             # offset=0, viewport=5 → all 7 rows visible; focus on item c (rowIdx=4)
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 2 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 5
             $result | Should -Be 0
@@ -303,7 +303,7 @@ Describe 'Clamp-ScrollOffset' {
         It 'header rule does not apply to first item whose predecessor is also an item' {
             # Focus on item b (focusIdx=1, rowIdx=2); row 1 is an item (not a header),
             # so effectiveTop = rowIdx = 2.  With offset=3 → scrolls up to 2.
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 1 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 3 -ViewportSize 3
             $result | Should -Be 2
@@ -312,7 +312,7 @@ Describe 'Clamp-ScrollOffset' {
         It 'scrolls down correctly past a header separator' {
             # Focus on item d (focusIdx=3, rowIdx=5); offset=0, viewport=3
             # rowIdx(5) >= 0+3 → new offset = 5 - 3 + 1 = 3
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 3 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 3
             $result | Should -Be 3
@@ -338,7 +338,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'navigating to the last item scrolls offset to show it' {
             $lastFocus = $script:td.ItemIndices.Count - 1  # focusIdx=7, rowIdx=9
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx $lastFocus -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 0 -ViewportSize 3
             # rowIdx(9) >= 0+3 → offset = 9 - 3 + 1 = 7
@@ -347,7 +347,7 @@ Describe 'Clamp-ScrollOffset' {
 
         It 'navigating back to item a1 returns offset 0 (header included)' {
             # item a1 is focusIdx=0, rowIdx=1; header at rowIdx=0 → effectiveTop=0
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 0 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 7 -ViewportSize 3
             $result | Should -Be 0
@@ -356,7 +356,7 @@ Describe 'Clamp-ScrollOffset' {
         It 'navigating to first Beta item reveals its header' {
             # item b1 is focusIdx=5, rowIdx=7; header at rowIdx=6 → effectiveTop=6
             # With offset=7: effectiveTop(6) < 7 → scroll up to 6
-            $result = script:Clamp-ScrollOffset `
+            $result = script:Limit-ScrollOffset `
                 -FocusIdx 5 -ItemIndices $script:td.ItemIndices `
                 -Rows $script:td.Rows -ScrollOffset 7 -ViewportSize 3
             $result | Should -Be 6

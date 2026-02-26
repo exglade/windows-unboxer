@@ -16,7 +16,7 @@ $script:MIN_WINDOW_HEIGHT = $script:BANNER_HEIGHT + $script:MENU_MIN_HEIGHT + $s
 # Internal rendering helpers
 # ---------------------------------------------------------------------------
 
-function script:Render-Banner {
+function script:Show-Banner {
     param(
         [string] $Title,
         [int]    $MaxWidth
@@ -47,7 +47,7 @@ function script:Render-Banner {
     [Console]::ForegroundColor = $origFg
 }
 
-function script:Render-Footer {
+function script:Show-Footer {
     param(
         [int] $FooterTop,
         [int] $MaxWidth
@@ -70,7 +70,7 @@ function script:Render-Footer {
 
 }
 
-function script:Clamp-ScrollOffset {
+function script:Limit-ScrollOffset {
     param(
         [int]   $FocusIdx,
         [array] $ItemIndices,
@@ -93,7 +93,7 @@ function script:Clamp-ScrollOffset {
     return $ScrollOffset
 }
 
-function script:Render-Checklist {
+function script:Show-Checklist {
     param(
         [array] $Rows,
         [array] $ItemIndices,
@@ -253,11 +253,11 @@ function Invoke-TuiChecklist {
     # --- Static render (banner + footer rendered once) ---
     try {
         Clear-Host
-        Render-Banner -Title $Title -MaxWidth $maxWidth
-        Render-Footer -FooterTop $footerTop -MaxWidth $maxWidth
+        Show-Banner -Title $Title -MaxWidth $maxWidth
+        Show-Footer -FooterTop $footerTop -MaxWidth $maxWidth
 
         # --- Initial menu render ---
-        Render-Checklist -Rows $rows -ItemIndices $itemIndices `
+        Show-Checklist -Rows $rows -ItemIndices $itemIndices `
             -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
             -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
 
@@ -270,7 +270,7 @@ function Invoke-TuiChecklist {
                 'UpArrow' {
                     if ($focusIdx -gt 0) {
                         $focusIdx--
-                        $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
+                        $scrollOffset = Limit-ScrollOffset -FocusIdx $focusIdx `
                             -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
                     }
                 }
@@ -278,7 +278,7 @@ function Invoke-TuiChecklist {
                 'DownArrow' {
                     if ($focusIdx -lt ($itemIndices.Count - 1)) {
                         $focusIdx++
-                        $scrollOffset = Clamp-ScrollOffset -FocusIdx $focusIdx `
+                        $scrollOffset = Limit-ScrollOffset -FocusIdx $focusIdx `
                             -ItemIndices $itemIndices -Rows $rows -ScrollOffset $scrollOffset -ViewportSize $viewportSize
                     }
                 }
@@ -302,7 +302,7 @@ function Invoke-TuiChecklist {
                 }
             }
 
-            Render-Checklist -Rows $rows -ItemIndices $itemIndices `
+            Show-Checklist -Rows $rows -ItemIndices $itemIndices `
                 -FocusIdx $focusIdx -ScrollOffset $scrollOffset `
                 -MenuTop $menuTop -MenuHeight $menuHeight -MaxWidth $maxWidth
         }
