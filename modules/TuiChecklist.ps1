@@ -44,6 +44,7 @@ function script:Render-Banner {
     [Console]::ForegroundColor = $origFg
     Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 4 blank
 
+    [Console]::ForegroundColor = $origFg
 }
 
 function script:Render-Footer {
@@ -58,6 +59,7 @@ function script:Render-Footer {
     [Console]::ForegroundColor = [ConsoleColor]::DarkGray
     Write-Host ("  " + ([string][char]0x2500) * [Math]::Max(0, $MaxWidth - 4)).PadRight($MaxWidth) -NoNewline  # row 0 rule
 
+    [Console]::ForegroundColor = $origFg
     [Console]::SetCursorPosition(0, $FooterTop + 1)
     Write-Host '  UP/DOWN: move   SPACE: toggle   ENTER: confirm   ESC: cancel'.PadRight($MaxWidth) -NoNewline  # row 1 instructions
 
