@@ -61,6 +61,7 @@ BeforeAll {
 
     function script:Make-TestPaths {
         return @{
+            Root      = $TestDrive
             Artifacts = $TestDrive
             Logs      = $TestDrive
             Plan      = (Join-Path $TestDrive 'plan.json')
@@ -276,15 +277,16 @@ Describe 'Invoke-AppStep - Mock mode simulated failure' {
 Describe 'Invoke-ScriptStepDispatch - DryRun mode' {
 
     BeforeAll {
-        Mock Invoke-ScriptStep {
-            return @{ Success = $true; ScriptPath = 'scripts/test.ps1'; ExplorerRequired = $false; Notes = @('dryRun') }
-        }
+        # Create a test script in $TestDrive
+        $testScript = Join-Path $TestDrive 'test-script.ps1'
+        Set-Content -Path $testScript -Value 'param([hashtable]$Parameters=@{},[switch]$DryRun);if($DryRun){Write-Output "dry"} else {Write-Output "ran"}'
     }
 
     It 'returns Success=$true' {
         $ctx    = script:Make-Ctx -Mode 'DryRun'
         $step   = script:New-ScriptStep
         $item   = script:Script-Item
+        $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }
@@ -293,6 +295,7 @@ Describe 'Invoke-ScriptStepDispatch - DryRun mode' {
         $ctx    = script:Make-Ctx -Mode 'DryRun'
         $step   = script:New-ScriptStep
         $item   = script:Script-Item
+        $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Notes | Should -Contain 'dryRun'
     }
@@ -304,10 +307,18 @@ Describe 'Invoke-ScriptStepDispatch - DryRun mode' {
 
 Describe 'Invoke-ScriptStepDispatch - Mock mode simulated failure' {
 
+    BeforeAll {
+        # Create a test script in $TestDrive
+        $testScript = Join-Path $TestDrive 'test-script.ps1'
+        Set-Content -Path $testScript -Value 'param([hashtable]$Parameters=@{},[switch]$DryRun);Write-Output "ran"'
+        Mock Start-Sleep {}
+    }
+
     It 'returns Success=$false when FailStepId matches' {
         $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
         $step   = script:New-ScriptStep 'tweak.ext'
         $item   = script:Script-Item 'tweak.ext'
+        $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeFalse
     }
@@ -316,17 +327,16 @@ Describe 'Invoke-ScriptStepDispatch - Mock mode simulated failure' {
         $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
         $step   = script:New-ScriptStep 'tweak.ext'
         $item   = script:Script-Item 'tweak.ext'
+        $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Error.message | Should -Match 'Simulated'
     }
 
     It 'does not fail a non-matching step' {
-        Mock Invoke-ScriptStep {
-            return @{ Success = $true; ScriptPath = 'scripts/test.ps1'; ExplorerRequired = $false; Notes = @('mock') }
-        }
         $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
         $step   = script:New-ScriptStep 'tweak.other'
         $item   = script:Script-Item 'tweak.other'
+        $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }

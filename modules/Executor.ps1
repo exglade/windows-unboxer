@@ -206,9 +206,9 @@ function Invoke-ScriptStepDispatch {
 
         return @{
             Success          = $result.Success
-            ScriptPath       = $result.ScriptPath
-            ExplorerRequired = if ($result.ExplorerRequired) { $result.ExplorerRequired } else { $false }
-            Error            = if ($result.Error) { $result.Error } else { $null }
+            ScriptPath       = $result['ScriptPath']
+            ExplorerRequired = if ($result['ExplorerRequired']) { $result['ExplorerRequired'] } else { $false }
+            Error            = if ($result['Error']) { $result['Error'] } else { $null }
             Notes            = $result.Notes
         }
     } catch {
@@ -334,7 +334,7 @@ function Invoke-Plan {
 
         # Update state
         $endedAt    = Get-Date -Format 'o'
-        $targetPath = if ($result.TargetPaths) { $result.TargetPaths -join '; ' } else { $null }
+        $targetPath = if ($result['TargetPaths']) { $result['TargetPaths'] -join '; ' } else { $null }
         if ($result.Success) {
             $succeededSteps++
             Update-StateStep -State $State -Id $step.id `
@@ -350,10 +350,10 @@ function Invoke-Plan {
             Update-StateStep -State $State -Id $step.id `
                 -Status    'Failed' `
                 -EndedAt   $endedAt `
-                -ErrorInfo ($result.Error) `
+                -ErrorInfo ($result['Error']) `
                 -Notes     ($result.Notes) `
                 -Command   ($result['Command'])
-            Write-Log "Step '$($step.id)' FAILED: $($result.Error.message)" -Level ERROR
+            Write-Log "Step '$($step.id)' FAILED: $(if ($result['Error']) { $result['Error'].message } else { 'Unknown error' })" -Level ERROR
 
             # Stop on first failure
             Write-Log 'Stopping execution due to step failure (stop-on-failure policy).' -Level WARN
