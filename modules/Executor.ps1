@@ -205,11 +205,11 @@ function Invoke-ScriptStepDispatch {
         $result = Invoke-ScriptStep -CatalogItem $CatalogItem -RunContext $RunContext
 
         return @{
-            Success          = $result.Success
+            Success          = $result['Success']
             ScriptPath       = $result['ScriptPath']
             ExplorerRequired = if ($result['ExplorerRequired']) { $result['ExplorerRequired'] } else { $false }
             Error            = if ($result['Error']) { $result['Error'] } else { $null }
-            Notes            = $result.Notes
+            Notes            = $result['Notes']
         }
     } catch {
         return @{
