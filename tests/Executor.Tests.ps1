@@ -16,7 +16,7 @@ BeforeAll {
     # ---------------------------------------------------------------------------
     # Test catalog item factories
     # ---------------------------------------------------------------------------
-    function script:App-Item {
+    function script:New-AppItem {
         param(
             [string]$Id    = 'core.chrome',
             [string]$WinId = 'Google.Chrome',
@@ -36,7 +36,7 @@ BeforeAll {
         }
     }
 
-    function script:Script-Item {
+    function script:New-ScriptItem {
         param([string]$Id = 'tweak.ext')
         [PSCustomObject]@{
             id   = $Id
@@ -59,7 +59,7 @@ BeforeAll {
         [ordered]@{ id = $Id; type = 'script'; parameters = @{} }
     }
 
-    function script:Make-TestPaths {
+    function script:New-TestPaths {
         return @{
             Root      = $TestDrive
             Artifacts = $TestDrive
@@ -69,7 +69,7 @@ BeforeAll {
         }
     }
 
-    function script:Make-Ctx {
+    function script:New-Ctx {
         param(
             [string]$Mode        = 'DryRun',
             [string]$TweakTarget = 'Test',
@@ -79,9 +79,10 @@ BeforeAll {
             Mode        = $Mode
             TweakTarget = $TweakTarget
             FailStepId  = $FailStepId
-            Paths       = (script:Make-TestPaths)
+            Paths       = (script:New-TestPaths)
         }
     }
+
 }
 
 # ---------------------------------------------------------------------------
@@ -91,7 +92,7 @@ BeforeAll {
 Describe 'Build-WingetCommand' {
 
     It 'produces the base mandatory flags' {
-        $item = script:App-Item
+        $item = script:New-AppItem
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -Match '--id Google\.Chrome'
         $cmd  | Should -Match '--exact'
@@ -100,38 +101,38 @@ Describe 'Build-WingetCommand' {
     }
 
     It 'includes --source when source is provided' {
-        $item = script:App-Item -Source 'winget'
+        $item = script:New-AppItem -Source 'winget'
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -Match '--source winget'
     }
 
     It 'includes --scope when scope is provided' {
-        $item = script:App-Item -Scope 'machine'
+        $item = script:New-AppItem -Scope 'machine'
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -Match '--scope machine'
     }
 
     It 'includes --override when override is non-null' {
-        $item = script:App-Item -Override '/SILENT'
+        $item = script:New-AppItem -Override '/SILENT'
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -Match '--override'
         $cmd  | Should -Match '/SILENT'
     }
 
     It 'omits --override when override is null' {
-        $item = script:App-Item -Override $null
+        $item = script:New-AppItem -Override $null
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -Not -Match '--override'
     }
 
     It 'uses the correct winget ID in the command' {
-        $item = script:App-Item -WinId 'Microsoft.VisualStudioCode'
+        $item = script:New-AppItem -WinId 'Microsoft.VisualStudioCode'
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -Match 'Microsoft\.VisualStudioCode'
     }
 
     It 'starts with winget install' {
-        $item = script:App-Item
+        $item = script:New-AppItem
         $cmd  = Build-WingetCommand -CatalogItem $item
         $cmd  | Should -BeLike 'winget install *'
     }
@@ -148,41 +149,41 @@ Describe 'Invoke-AppStep - DryRun mode' {
     }
 
     It 'returns Success=$true' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $step   = script:New-AppStep
-        $item   = script:App-Item
+        $item   = script:New-AppItem
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Success | Should -BeTrue
     }
 
     It 'does NOT call Invoke-WingetInstall' {
-        $ctx  = script:Make-Ctx -Mode 'DryRun'
+        $ctx  = script:New-Ctx -Mode 'DryRun'
         $step = script:New-AppStep
-        $item = script:App-Item
+        $item = script:New-AppItem
         Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths | Out-Null
         Should -Invoke Invoke-WingetInstall -Times 0
     }
 
     It 'returns notes containing "dryRun"' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $step   = script:New-AppStep
-        $item   = script:App-Item
+        $item   = script:New-AppItem
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Notes | Should -Contain 'dryRun'
     }
 
     It 'returns the built command in the Command field' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $step   = script:New-AppStep
-        $item   = script:App-Item
+        $item   = script:New-AppItem
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Command | Should -BeLike 'winget install *'
     }
 
     It 'returns null Error' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $step   = script:New-AppStep
-        $item   = script:App-Item
+        $item   = script:New-AppItem
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Error | Should -BeNullOrEmpty
     }
@@ -199,33 +200,33 @@ Describe 'Invoke-AppStep - Mock mode success' {
     }
 
     It 'returns Success=$true when FailStepId does not match' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'other.id'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'other.id'
         $step   = script:New-AppStep 'core.chrome'
-        $item   = script:App-Item
+        $item   = script:New-AppItem
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Success | Should -BeTrue
     }
 
     It 'does NOT call Invoke-WingetInstall' {
-        $ctx  = script:Make-Ctx -Mode 'Mock'
+        $ctx  = script:New-Ctx -Mode 'Mock'
         $step = script:New-AppStep
-        $item = script:App-Item
+        $item = script:New-AppItem
         Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths | Out-Null
         Should -Invoke Invoke-WingetInstall -Times 0
     }
 
     It 'returns notes containing "mock"' {
-        $ctx    = script:Make-Ctx -Mode 'Mock'
+        $ctx    = script:New-Ctx -Mode 'Mock'
         $step   = script:New-AppStep
-        $item   = script:App-Item
+        $item   = script:New-AppItem
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Notes | Should -Contain 'mock'
     }
 
     It 'calls Start-Sleep to simulate work' {
-        $ctx  = script:Make-Ctx -Mode 'Mock'
+        $ctx  = script:New-Ctx -Mode 'Mock'
         $step = script:New-AppStep
-        $item = script:App-Item
+        $item = script:New-AppItem
         Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths | Out-Null
         Should -Invoke Start-Sleep -Times 1
     }
@@ -238,33 +239,33 @@ Describe 'Invoke-AppStep - Mock mode success' {
 Describe 'Invoke-AppStep - Mock mode simulated failure' {
 
     It 'returns Success=$false when FailStepId matches step ID' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
         $step   = script:New-AppStep 'dev.vscode'
-        $item   = script:App-Item -Id 'dev.vscode' -WinId 'Microsoft.VisualStudioCode'
+        $item   = script:New-AppItem -Id 'dev.vscode' -WinId 'Microsoft.VisualStudioCode'
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Success | Should -BeFalse
     }
 
     It 'returns an error message for the simulated failure' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
         $step   = script:New-AppStep 'dev.vscode'
-        $item   = script:App-Item -Id 'dev.vscode' -WinId 'Microsoft.VisualStudioCode'
+        $item   = script:New-AppItem -Id 'dev.vscode' -WinId 'Microsoft.VisualStudioCode'
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Error.message | Should -Match 'Simulated'
     }
 
     It 'includes "simulatedFailure" in notes' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
         $step   = script:New-AppStep 'dev.vscode'
-        $item   = script:App-Item -Id 'dev.vscode'
+        $item   = script:New-AppItem -Id 'dev.vscode'
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Notes | Should -Contain 'simulatedFailure'
     }
 
     It 'does NOT fail a different step ID' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'dev.vscode'
         $step   = script:New-AppStep 'core.chrome'
-        $item   = script:App-Item -Id 'core.chrome'
+        $item   = script:New-AppItem -Id 'core.chrome'
         $result = Invoke-AppStep -Step $step -CatalogItem $item -RunContext $ctx -Paths $ctx.Paths
         $result.Success | Should -BeTrue
     }
@@ -283,18 +284,18 @@ Describe 'Invoke-ScriptStepDispatch - DryRun mode' {
     }
 
     It 'returns Success=$true' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $step   = script:New-ScriptStep
-        $item   = script:Script-Item
+        $item   = script:New-ScriptItem
         $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }
 
     It 'includes mode name in notes' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $step   = script:New-ScriptStep
-        $item   = script:Script-Item
+        $item   = script:New-ScriptItem
         $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Notes | Should -Contain 'dryRun'
@@ -315,27 +316,27 @@ Describe 'Invoke-ScriptStepDispatch - Mock mode simulated failure' {
     }
 
     It 'returns Success=$false when FailStepId matches' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
         $step   = script:New-ScriptStep 'tweak.ext'
-        $item   = script:Script-Item 'tweak.ext'
+        $item   = script:New-ScriptItem 'tweak.ext'
         $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeFalse
     }
 
     It 'sets error message on simulated failure' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
         $step   = script:New-ScriptStep 'tweak.ext'
-        $item   = script:Script-Item 'tweak.ext'
+        $item   = script:New-ScriptItem 'tweak.ext'
         $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Error.message | Should -Match 'Simulated'
     }
 
     It 'does not fail a non-matching step' {
-        $ctx    = script:Make-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
+        $ctx    = script:New-Ctx -Mode 'Mock' -FailStepId 'tweak.ext'
         $step   = script:New-ScriptStep 'tweak.other'
-        $item   = script:Script-Item 'tweak.other'
+        $item   = script:New-ScriptItem 'tweak.other'
         $item.script.path = 'test-script.ps1'
         $result = Invoke-ScriptStepDispatch -Step $step -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
@@ -374,7 +375,7 @@ Describe 'Invoke-Plan - DryRun full run' {
             Mode        = 'DryRun'
             TweakTarget = 'Real'
             FailStepId  = $null
-            Paths       = (script:Make-TestPaths)
+            Paths       = (script:New-TestPaths)
         }
 
         Write-JsonAtomic -Path $ctx.Paths.State -InputObject $state
@@ -436,7 +437,7 @@ Describe 'Invoke-Plan - Mock mode stop-on-failure' {
             Mode        = 'Mock'
             TweakTarget = 'Test'
             FailStepId  = 'dev.vscode'   # second step fails
-            Paths       = (script:Make-TestPaths)
+            Paths       = (script:New-TestPaths)
         }
 
         Write-JsonAtomic -Path $ctx.Paths.State -InputObject $state
@@ -498,7 +499,7 @@ Describe 'Invoke-Plan - ResumePending skips already-Succeeded steps' {
             Mode        = 'DryRun'
             TweakTarget = 'Real'
             FailStepId  = $null
-            Paths       = (script:Make-TestPaths)
+            Paths       = (script:New-TestPaths)
         }
 
         Write-JsonAtomic -Path $ctx.Paths.State -InputObject $state

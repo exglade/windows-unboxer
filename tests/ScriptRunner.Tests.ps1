@@ -10,7 +10,7 @@ BeforeAll {
     # ---------------------------------------------------------------------------
     # Helpers
     # ---------------------------------------------------------------------------
-    function script:Make-TestPaths {
+    function script:New-TestPaths {
         return @{
             Root      = $TestDrive
             Artifacts = $TestDrive
@@ -20,7 +20,7 @@ BeforeAll {
         }
     }
 
-    function script:Make-Ctx {
+    function script:New-Ctx {
         param(
             [string]$Mode = 'DryRun'
         )
@@ -28,7 +28,7 @@ BeforeAll {
             Mode        = $Mode
             TweakTarget = 'Test'
             FailStepId  = $null
-            Paths       = (script:Make-TestPaths)
+            Paths       = (script:New-TestPaths)
         }
     }
 
@@ -138,35 +138,35 @@ Describe 'ConvertTo-ParameterHashtable' {
 Describe 'Invoke-ScriptStep - DryRun mode' {
 
     It 'returns Success=$true' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }
 
     It 'does not call the actual script in DryRun' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Notes | Should -Contain 'dryRun'
     }
 
     It 'returns the resolved script path' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.ScriptPath | Should -BeLike '*test-script.ps1'
     }
 
     It 'returns ExplorerRequired=$true when restartExplorer=true' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1' -RestartExplorer $true
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.ExplorerRequired | Should -BeTrue
     }
 
     It 'returns ExplorerRequired=$false when restartExplorer=false' {
-        $ctx    = script:Make-Ctx -Mode 'DryRun'
+        $ctx    = script:New-Ctx -Mode 'DryRun'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1' -RestartExplorer $false
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.ExplorerRequired | Should -BeFalse
@@ -184,21 +184,21 @@ Describe 'Invoke-ScriptStep - Mock mode' {
     }
 
     It 'returns Success=$true' {
-        $ctx    = script:Make-Ctx -Mode 'Mock'
+        $ctx    = script:New-Ctx -Mode 'Mock'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }
 
     It 'returns notes containing "mock"' {
-        $ctx    = script:Make-Ctx -Mode 'Mock'
+        $ctx    = script:New-Ctx -Mode 'Mock'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Notes | Should -Contain 'mock'
     }
 
     It 'calls Start-Sleep to simulate work' {
-        $ctx  = script:Make-Ctx -Mode 'Mock'
+        $ctx  = script:New-Ctx -Mode 'Mock'
         $item = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         Invoke-ScriptStep -CatalogItem $item -RunContext $ctx | Out-Null
         Should -Invoke Start-Sleep -Times 1
@@ -212,14 +212,14 @@ Describe 'Invoke-ScriptStep - Mock mode' {
 Describe 'Invoke-ScriptStep - Real mode success' {
 
     It 'returns Success=$true for a script that completes normally' {
-        $ctx    = script:Make-Ctx -Mode 'Real'
+        $ctx    = script:New-Ctx -Mode 'Real'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue
     }
 
     It 'returns notes containing "real"' {
-        $ctx    = script:Make-Ctx -Mode 'Real'
+        $ctx    = script:New-Ctx -Mode 'Real'
         $item   = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Notes | Should -Contain 'real'
@@ -233,14 +233,14 @@ Describe 'Invoke-ScriptStep - Real mode success' {
 Describe 'Invoke-ScriptStep - Real mode failure' {
 
     It 'returns Success=$false when script throws' {
-        $ctx    = script:Make-Ctx -Mode 'Real'
+        $ctx    = script:New-Ctx -Mode 'Real'
         $item   = script:New-ScriptItem -ScriptPath 'fail-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeFalse
     }
 
     It 'returns error message when script throws' {
-        $ctx    = script:Make-Ctx -Mode 'Real'
+        $ctx    = script:New-Ctx -Mode 'Real'
         $item   = script:New-ScriptItem -ScriptPath 'fail-script.ps1'
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Error.message | Should -Match 'intentionally failed'
@@ -254,7 +254,7 @@ Describe 'Invoke-ScriptStep - Real mode failure' {
 Describe 'Invoke-ScriptStep - script not found' {
 
     It 'throws when the script file does not exist' {
-        $ctx  = script:Make-Ctx -Mode 'DryRun'
+        $ctx  = script:New-Ctx -Mode 'DryRun'
         $item = script:New-ScriptItem -ScriptPath 'nonexistent.ps1'
         { Invoke-ScriptStep -CatalogItem $item -RunContext $ctx } | Should -Throw '*Script not found*'
     }
@@ -267,7 +267,7 @@ Describe 'Invoke-ScriptStep - script not found' {
 Describe 'Invoke-ScriptStep - invalid mode' {
 
     It 'throws for unsupported RunContext.Mode values' {
-        $ctx  = script:Make-Ctx -Mode 'REAL'
+        $ctx  = script:New-Ctx -Mode 'REAL'
         $item = script:New-ScriptItem -ScriptPath 'test-script.ps1'
         { Invoke-ScriptStep -CatalogItem $item -RunContext $ctx } |
             Should -Throw "*Unsupported RunContext.Mode*"
@@ -281,7 +281,7 @@ Describe 'Invoke-ScriptStep - invalid mode' {
 Describe 'Invoke-ScriptStep - parameters' {
 
     It 'passes parameters to the script' {
-        $ctx    = script:Make-Ctx -Mode 'Real'
+        $ctx    = script:New-Ctx -Mode 'Real'
         $item   = script:New-ScriptItem -ScriptPath 'param-script.ps1' -Parameters @{ key = 'hello' }
         $result = Invoke-ScriptStep -CatalogItem $item -RunContext $ctx
         $result.Success | Should -BeTrue

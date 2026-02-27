@@ -11,7 +11,7 @@ BeforeAll {
     # ---------------------------------------------------------------------------
     # Helpers — build test catalog items
     # ---------------------------------------------------------------------------
-    function script:Make-Item {
+    function script:New-MockCatalogItem {
         param([string]$Id, [string]$Category, [string]$DisplayName, [int]$Priority, [string]$Type = 'app')
         $item = [PSCustomObject]@{
             id               = $Id
@@ -34,10 +34,10 @@ BeforeAll {
     }
 
     $script:AllItems = @(
-        (script:Make-Item 'tweak.ext'    'Tweaks'       'Show extensions'    50  'script'),
-        (script:Make-Item 'core.chrome'  'Core'         'Google Chrome'     200  'app'),
-        (script:Make-Item 'dev.vscode'   'Dev'          'VS Code'           300  'app'),
-        (script:Make-Item 'prod.npp'     'Productivity' 'Notepad++'         510  'app')
+        (script:New-MockCatalogItem 'tweak.ext'    'Tweaks'       'Show extensions'    50  'script'),
+        (script:New-MockCatalogItem 'core.chrome'  'Core'         'Google Chrome'     200  'app'),
+        (script:New-MockCatalogItem 'dev.vscode'   'Dev'          'VS Code'           300  'app'),
+        (script:New-MockCatalogItem 'prod.npp'     'Productivity' 'Notepad++'         510  'app')
     )
 }
 
