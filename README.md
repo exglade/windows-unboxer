@@ -51,50 +51,51 @@ At the end of the day, I just want to get the job done quickly, without giving u
 ## Prerequisites
 
 - Windows 11 (build ≥ 22000)
-- [winget](https://aka.ms/getwinget) (App Installer) — not required in `-DryRun` / `-Mock` mode
+- [winget](https://aka.ms/getwinget) (App Installer)
 
 ## Quick Start
 
 1. Clone this repository.
 2. Allow local scripts if you haven't already:
+
    ```powershell
    Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
    ```
-3. Run `Setup.ps1`:
+
+3. Run `Start.ps1`:
+
    ```powershell
-   .\Setup.ps1
+   .\Start.ps1
    ```
 
 Use `↑`/`↓` to navigate, `Space` to toggle items, `Enter` to confirm.
 
-## Usage
+## Start.ps1 Parameters
 
 | Flag | Description |
-|---|---|
+| --- | --- |
 | _(none)_ | Normal interactive run |
 | `-DryRun` | Log commands without executing anything |
 | `-Mock` | Fake execution — useful for testing state and resume logic |
-| `-TweakTarget Test` | Redirect registry writes to a safe test key (use with `-Mock`) |
 | `-FailStepId <id>` | Simulate a failure on a specific step ID (use with `-Mock`) |
 | `-ProfilePath <path>` | Load a profile JSON file to pre-select items and apply per-app overrides |
 | `-Silent` | Skip all prompts — runs fully unattended using catalog defaults or a profile |
 
 ```powershell
-.\Setup.ps1 -DryRun
-.\Setup.ps1 -Mock -TweakTarget Test
-.\Setup.ps1 -Mock -FailStepId dev.vscode
-.\Setup.ps1 -Silent
-.\Setup.ps1 -Silent -ProfilePath .\profile.example.json
+.\Start.ps1 -DryRun
+.\Start.ps1 -Mock -FailStepId dev.vscode
+.\Start.ps1 -Silent
+.\Start.ps1 -Silent -ProfilePath .\profile.example.json
 ```
 
-If a run is interrupted, re-running `Setup.ps1` detects the saved state and offers to **resume pending steps**, **re-run failed steps**, **start over**, or **view the last report**.
+If a run is interrupted, re-running `Start.ps1` detects the saved state and offers to **resume pending steps**, **re-run failed steps**, **start over**, or **view the last report**.
 
 ## Profiles
 
 Pass a profile JSON file with `-ProfilePath` to pre-select items and override per-app winget settings without editing `catalog.json`:
 
 ```powershell
-.\Setup.ps1 -ProfilePath .\profile.example.json
+.\Start.ps1 -ProfilePath .\profile.example.json
 ```
 
 Copy `profile.example.json` as a starting point and adjust to your needs. Both fields are optional:
@@ -111,8 +112,8 @@ Copy `profile.example.json` as a starting point and adjust to your needs. Both f
 ```
 
 | Field | Description |
-|---|---|
-| `selectedIds` | Items pre-checked in the Main Menu. Replaces the default category-based selection. The user can still toggle items before confirming. With `-Silent`, the Main Menu is skipped entirely and these IDs are used as-is. |
+| --- | --- |
+| `selectedIds` | Items pre-checked in the Main Menu when using `-ProfilePath`. If omitted, no items are pre-checked for profile-driven runs. The user can still toggle items before confirming. With `-Silent`, the Main Menu is skipped entirely and these IDs are used as-is. |
 | `overrides` | Per-item overrides keyed by item ID. For app items: `scope` and `override` can be changed; `id` and `source` are fixed. For script items: `parameters` can be overridden to customise script behaviour. |
 
 ## Catalog
@@ -120,6 +121,7 @@ Copy `profile.example.json` as a starting point and adjust to your needs. Both f
 Items are defined in `catalog.json`. There are two types:
 
 **App** — installed via winget:
+
 ```json
 {
   "id": "dev.vscode",
@@ -136,6 +138,7 @@ Items are defined in `catalog.json`. There are two types:
 ```
 
 **Script** — runs a PowerShell script:
+
 ```json
 {
   "id": "tweak.showExtensions",
@@ -153,12 +156,12 @@ Items are defined in `catalog.json`. There are two types:
 
 Scripts accept `-Parameters` (hashtable) and `-DryRun` (switch). See [docs/writing-scripts.md](docs/writing-scripts.md) for the full guide on writing scripts for the runner.
 
-Items in the `Core`, `Dev`, and `Tweaks` categories are pre-checked by default. Lower `priority` values run first.
+All catalog items are pre-checked by default. When `-ProfilePath` is used, preselection comes from profile `selectedIds` (or none if omitted). Lower `priority` values run first.
 
 ## Project Structure
 
 ```text
-Setup.ps1            # Entry point and orchestrator
+Start.ps1            # Entry point and orchestrator
 Test-Script.ps1      # Script validator (test your scripts)
 catalog.json         # App and script definitions
 modules/
@@ -167,10 +170,8 @@ modules/
   Executor.ps1       # Run plan steps (winget installs, script dispatching)
   PlanState.ps1      # Build plan/state, resume menu, report
   ScriptRunner.ps1   # PowerShell script runner
-  MainMenu.ps1       # Interactive terminal checklist UI
-  Tweaks.ps1         # Compatibility stub
+  MainMenu.ps1       # Interactive main menu terminal UI
 scripts/             # PowerShell scripts for catalog script items
-docs/                # Documentation
 setup-artifacts/     # Logs, plan.json, state.json (generated at runtime)
 tests/               # Pester unit tests
 ```
@@ -181,13 +182,6 @@ Requires [Pester](https://pester.dev) v5+.
 
 ```powershell
 .\Run-Tests.ps1
-```
-
-Validate JSON files against schemas:
-
-```powershell
-.\Validate-JsonSchema.ps1
-.\Validate-JsonSchema.ps1 -JsonPath .\catalog.json -SchemaPath .\catalog.schema.json
 ```
 
 ## License
