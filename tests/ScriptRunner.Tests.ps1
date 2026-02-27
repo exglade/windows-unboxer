@@ -27,10 +27,9 @@ BeforeAll {
             [string]$Mode = 'DryRun'
         )
         @{
-            Mode        = $Mode
-            TweakTarget = 'Test'
-            FailStepId  = $null
-            Paths       = (script:New-TestPaths)
+            Mode       = $Mode
+            FailStepId = $null
+            Paths      = (script:New-TestPaths)
         }
     }
 

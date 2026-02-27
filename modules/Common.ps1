@@ -240,7 +240,7 @@ function Invoke-ExplorerRestartPrompt {
     <#
     .SYNOPSIS
         Prompts user to restart Explorer after all tweaks are done.
-        Skipped in DryRun and when TweakTarget=Test.
+        Skipped in DryRun and Mock mode.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
         Justification = 'CLI tool — interactive prompt requires coloured console output.')]
@@ -249,7 +249,7 @@ function Invoke-ExplorerRestartPrompt {
         [hashtable]$RunContext
     )
 
-    if ($RunContext.Mode -eq 'DryRun' -or $RunContext.TweakTarget -eq 'Test') {
+    if ($RunContext.Mode -eq 'DryRun' -or $RunContext.Mode -eq 'Mock') {
         return
     }
 

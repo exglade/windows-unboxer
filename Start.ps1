@@ -11,10 +11,6 @@
     Full execution flow with fake actions (no real winget or registry writes).
     Useful for testing resume behaviour and state transitions.
 
-.PARAMETER TweakTarget
-    'Real' (default) or 'Test'.
-    'Test' redirects registry writes to HKCU:\Software\KaiSetup\TestTweaks\...
-
 .PARAMETER FailStepId
     (Only with -Mock) Simulate a failure on the step with this ID.
 
@@ -33,7 +29,6 @@
     .\Setup.ps1                                          # Normal interactive run
     .\Setup.ps1 -DryRun                                  # Preview only
     .\Setup.ps1 -Mock                                    # Fake execution
-    .\Setup.ps1 -Mock -TweakTarget Test                  # Fake + safe registry
     .\Setup.ps1 -Mock -FailStepId dev.vscode             # Simulate failure on VS Code step
     .\Setup.ps1 -ProfilePath .\profile.example.json      # Load a profile
     .\Setup.ps1 -Silent                                  # No-prompt run with default selection
@@ -46,9 +41,6 @@ param(
     [switch]$DryRun,
 
     [switch]$Mock,
-
-    [ValidateSet('Real', 'Test')]
-    [string]$TweakTarget = 'Real',
 
     [string]$FailStepId = $null,
 
@@ -96,21 +88,13 @@ $mode = 'Real'
 if ($DryRun)  { $mode = 'DryRun' }
 elseif ($Mock){ $mode = 'Mock'   }
 
-# In Mock mode, warn if TweakTarget is Real (discourage accidental registry writes)
-if ($mode -eq 'Mock' -and $TweakTarget -eq 'Real') {
-    Write-Warning "Running in Mock mode with TweakTarget=Real. Registry tweaks will be simulated (no writes). Consider -TweakTarget Test."
-    # In Mock mode, auto-redirect to Test to keep machine clean
-    $TweakTarget = 'Test'
-}
-
 $Paths = Get-ArtifactPaths -RootDir $ScriptRoot
 
 $RunContext = @{
-    Mode        = $mode
-    TweakTarget = $TweakTarget
-    FailStepId  = $FailStepId
-    Paths       = $Paths
-    Silent      = $Silent.IsPresent
+    Mode       = $mode
+    FailStepId = $FailStepId
+    Paths      = $Paths
+    Silent     = $Silent.IsPresent
 }
 
 # ---------------------------------------------------------------------------
@@ -120,7 +104,7 @@ Initialize-ArtifactDirectories -Paths $Paths
 Initialize-Log -LogDir $Paths.Logs
 
 Write-SetupLog "=== PC Setup starting ==="
-Write-SetupLog "Mode=$mode  TweakTarget=$TweakTarget  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
+Write-SetupLog "Mode=$mode  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
 
 # Mode banner
 switch ($mode) {

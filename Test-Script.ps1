@@ -131,10 +131,9 @@ try {
         }
     }
     $ctx = @{
-        Mode        = 'DryRun'
-        TweakTarget = 'Test'
-        FailStepId  = $null
-        Paths       = @{ Root = (Split-Path $resolvedPath -Parent) }
+        Mode       = 'DryRun'
+        FailStepId = $null
+        Paths      = @{ Root = (Split-Path $resolvedPath -Parent) }
     }
     # Override the script path to be just the filename since Root is the parent dir
     $mockItem.script.path = (Split-Path $resolvedPath -Leaf)
@@ -163,10 +162,9 @@ if (-not $SkipRealRun) {
             }
         }
         $ctx = @{
-            Mode        = 'Real'
-            TweakTarget = 'Test'
-            FailStepId  = $null
-            Paths       = @{ Root = (Split-Path $resolvedPath -Parent) }
+            Mode       = 'Real'
+            FailStepId = $null
+            Paths      = @{ Root = (Split-Path $resolvedPath -Parent) }
         }
         $result = Invoke-ScriptStep -CatalogItem $mockItem -RunContext $ctx
         $realRunPassed = $result.Success -eq $true

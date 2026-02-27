@@ -234,20 +234,20 @@ Describe 'Invoke-ExplorerRestartPrompt - DryRun skips restart' {
     }
 
     It 'does not restart Explorer in DryRun mode' {
-        $ctx = @{ Mode = 'DryRun'; TweakTarget = 'Real'; Silent = $false }
+        $ctx = @{ Mode = 'DryRun'; Silent = $false }
         Invoke-ExplorerRestartPrompt -RunContext $ctx
         Should -Invoke Restart-Explorer -Times 0
     }
 }
 
-Describe 'Invoke-ExplorerRestartPrompt - Test target skips restart' {
+Describe 'Invoke-ExplorerRestartPrompt - Mock mode skips restart' {
 
     BeforeAll {
         Mock Restart-Explorer {}
     }
 
-    It 'does not restart Explorer when TweakTarget is Test' {
-        $ctx = @{ Mode = 'Mock'; TweakTarget = 'Test'; Silent = $false }
+    It 'does not restart Explorer in Mock mode' {
+        $ctx = @{ Mode = 'Mock'; Silent = $false }
         Invoke-ExplorerRestartPrompt -RunContext $ctx
         Should -Invoke Restart-Explorer -Times 0
     }
@@ -260,7 +260,7 @@ Describe 'Invoke-ExplorerRestartPrompt - Silent mode auto-restarts Explorer' {
     }
 
     It 'automatically restarts Explorer without prompting in Silent mode' {
-        $ctx = @{ Mode = 'Real'; TweakTarget = 'Real'; Silent = $true }
+        $ctx = @{ Mode = 'Real'; Silent = $true }
         Invoke-ExplorerRestartPrompt -RunContext $ctx
         Should -Invoke Restart-Explorer -Times 1
     }
