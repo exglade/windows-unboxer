@@ -7,6 +7,9 @@
   "required": ["version", "defaults", "items"],
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "version": {
       "type": "string",
       "description": "Schema version of this catalog file.",
@@ -39,7 +42,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^[a-z0-9]+\\.[a-z0-9]+$",
+          "pattern": "^[a-zA-Z0-9]+\\.[a-zA-Z0-9]+$",
           "description": "Unique step identifier in 'category.name' format (e.g. 'dev.vscode')."
         },
         "type": {
