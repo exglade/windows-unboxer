@@ -148,6 +148,9 @@ if ($ProfilePath) {
     if ($profileHasSelectedIds) {
         $preselectedIds = @($profileData.selectedIds)
         Write-SetupLog "Profile pre-selection ($($preselectedIds.Count) item(s)): $($preselectedIds -join ', ')"
+    } else {
+        $preselectedIds = @()
+        Write-SetupLog 'Profile loaded without selectedIds — no items pre-selected.'
     }
 }
 

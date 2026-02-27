@@ -182,39 +182,13 @@ Describe 'Import-Catalog - sort order' {
 
 Describe 'Get-PreselectedIds' {
 
-    It 'returns an array' {
+    It 'returns all catalog item IDs' {
         $ids = Get-PreselectedIds -Items $script:Items
-        $ids | Should -Not -BeNullOrEmpty
-    }
+        $ids.Count | Should -Be $script:Items.Count
 
-    It 'includes Core category items' {
-        $ids = Get-PreselectedIds -Items $script:Items
-        $ids | Should -Contain 'core.chrome'
-    }
-
-    It 'includes Dev category items' {
-        $ids = Get-PreselectedIds -Items $script:Items
-        $ids | Should -Contain 'dev.vscode'
-    }
-
-    It 'includes Tweaks category items' {
-        $ids = Get-PreselectedIds -Items $script:Items
-        $ids | Should -Contain 'tweak.ext'
-    }
-
-    It 'excludes Productivity category items' {
-        $ids = Get-PreselectedIds -Items $script:Items
-        $ids | Should -Not -Contain 'productivity.npp'
-    }
-
-    It 'excludes Media category items' {
-        $ids = Get-PreselectedIds -Items $script:Items
-        $ids | Should -Not -Contain 'nopriority.item'
-    }
-
-    It 'returns only 3 items for the test catalog (Core:1 Dev:1 Tweaks:1)' {
-        $ids = Get-PreselectedIds -Items $script:Items
-        $ids.Count | Should -Be 3
+        $expected = @($script:Items | ForEach-Object { $_.id } | Sort-Object)
+        $actual   = @($ids | Sort-Object)
+        $actual | Should -Be $expected
     }
 
     It 'returns empty array for empty input' {
