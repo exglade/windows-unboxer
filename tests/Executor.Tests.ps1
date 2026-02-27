@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Executor.Tests.ps1 - Unit tests for modules/Executor.ps1
 
 BeforeAll {
@@ -8,7 +8,7 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\PlanState.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Executor.ps1')
 
-    Mock Write-Log {}
+    Mock Write-SetupLog {}
     Mock Write-Host {}
     Mock Get-OsVersion { 'Windows 11 Pro' }
     Mock Start-Sleep {}  # avoid actual delays in mock-mode tests
@@ -60,6 +60,8 @@ BeforeAll {
     }
 
     function script:New-TestPaths {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
+        param()
         return @{
             Root      = $TestDrive
             Artifacts = $TestDrive

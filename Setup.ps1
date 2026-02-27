@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Windows 11 Fresh PC Setup tool.
     Interactive checklist -> plan generation -> execution with resume support.
@@ -39,6 +39,8 @@
     .\Setup.ps1 -Silent                                  # No-prompt run with default selection
     .\Setup.ps1 -Silent -ProfilePath .\profile.example.json  # No-prompt run with profile
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'CLI setup tool — requires coloured console output via Write-Host.')]
 [CmdletBinding()]
 param(
     [switch]$DryRun,
@@ -118,8 +120,8 @@ $RunContext = @{
 Initialize-ArtifactDirectories -Paths $Paths
 Initialize-Log -LogDir $Paths.Logs
 
-Write-Log "=== PC Setup starting ==="
-Write-Log "Mode=$mode  TweakTarget=$TweakTarget  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
+Write-SetupLog "=== PC Setup starting ==="
+Write-SetupLog "Mode=$mode  TweakTarget=$TweakTarget  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
 
 # Mode banner
 switch ($mode) {
@@ -149,20 +151,20 @@ Assert-Prerequisites -RunContext $RunContext
 # ---------------------------------------------------------------------------
 # 5. Load catalog
 # ---------------------------------------------------------------------------
-Write-Log "Loading catalog: $($Paths.Catalog)"
+Write-SetupLog "Loading catalog: $($Paths.Catalog)"
 $catalogItems   = Import-Catalog -CatalogPath $Paths.Catalog
 $preselectedIds = Get-PreselectedIds -Items $catalogItems
 
 # Apply profile if supplied
 if ($ProfilePath) {
     $profileData  = Import-Profile -ProfilePath $ProfilePath
-    $catalogItems = Merge-ProfileOverrides -Items $catalogItems -Profile $profileData
+    $catalogItems = Merge-ProfileOverrides -Items $catalogItems -ProfileData $profileData
 
     $profileHasSelectedIds = $null -ne $profileData.PSObject.Properties['selectedIds'] -and
                              $null -ne $profileData.selectedIds
     if ($profileHasSelectedIds) {
         $preselectedIds = @($profileData.selectedIds)
-        Write-Log "Profile pre-selection ($($preselectedIds.Count) item(s)): $($preselectedIds -join ', ')"
+        Write-SetupLog "Profile pre-selection ($($preselectedIds.Count) item(s)): $($preselectedIds -join ', ')"
     }
 }
 
@@ -172,7 +174,7 @@ if ($ProfilePath) {
 $resumeOption = 'All'   # default for fresh start
 
 if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
-    Write-Log 'Existing state found — showing resume menu.'
+    Write-SetupLog 'Existing state found — showing resume menu.'
 
     try {
         $existingState = Read-JsonFile -Path $Paths.State
@@ -183,11 +185,11 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
 
         if ($incompletePart) {
             if ($Silent) {
-                Write-Log 'Silent mode — auto-resuming pending steps.'
+                Write-SetupLog 'Silent mode — auto-resuming pending steps.'
                 $stateToUse = ConvertTo-MutableState -StateObj $existingState
                 $planToUse  = ConvertTo-MutablePlan  -PlanObj  $existingPlan
 
-                Write-Log "Resuming pending steps..."
+                Write-SetupLog "Resuming pending steps..."
                 Invoke-Plan -Plan $planToUse -State $stateToUse `
                     -CatalogItems $catalogItems `
                     -RunContext   $RunContext `
@@ -196,10 +198,10 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
                 exit 0
             }
 
-            $menuResult = Invoke-ResumeMenu -State $existingState -Paths $Paths
+            $menuResult = Invoke-ResumeMenu -State $existingState
 
             if (-not $menuResult -or $menuResult.Action -eq 'Cancel') {
-                Write-Log 'User cancelled.'
+                Write-SetupLog 'User cancelled.'
                 exit 0
             }
 
@@ -213,7 +215,7 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
                 }
 
                 'StartOver' {
-                    Write-Log 'Starting over — archiving previous artifacts.'
+                    Write-SetupLog 'Starting over — archiving previous artifacts.'
                     Invoke-ArchiveArtifacts -Paths $Paths
                     # Fall through to plan mode below
                 }
@@ -225,7 +227,7 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
                     $stateToUse = ConvertTo-MutableState -StateObj $existingState
                     $planToUse  = ConvertTo-MutablePlan  -PlanObj  $existingPlan
 
-                    Write-Log "Resuming pending steps..."
+                    Write-SetupLog "Resuming pending steps..."
                     Invoke-Plan -Plan $planToUse -State $stateToUse `
                         -CatalogItems $catalogItems `
                         -RunContext   $RunContext `
@@ -240,7 +242,7 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
                     $stateToUse = ConvertTo-MutableState -StateObj $existingState
                     $planToUse  = ConvertTo-MutablePlan  -PlanObj  $existingPlan
 
-                    Write-Log "Re-running failed steps..."
+                    Write-SetupLog "Re-running failed steps..."
                     Invoke-Plan -Plan $planToUse -State $stateToUse `
                         -CatalogItems $catalogItems `
                         -RunContext   $RunContext `
@@ -251,11 +253,11 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
             }
             # If we reach here it was StartOver — fall through to plan mode
         } else {
-            Write-Log 'All steps already succeeded. Nothing to resume.'
+            Write-SetupLog 'All steps already succeeded. Nothing to resume.'
             Show-Report -State $existingState -Paths $Paths
 
             if ($Silent) {
-                Write-Log 'Silent mode — exiting (all steps already complete).'
+                Write-SetupLog 'Silent mode — exiting (all steps already complete).'
                 exit 0
             }
 
@@ -267,24 +269,24 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
             Invoke-ArchiveArtifacts -Paths $Paths
         }
     } catch {
-        Write-Log "Failed to load existing state/plan: $_  — will start fresh." -Level WARN
+        Write-SetupLog "Failed to load existing state/plan: $_  — will start fresh." -Level WARN
     }
 }
 
 # ---------------------------------------------------------------------------
 # 7. Plan mode — checklist -> plan -> state -> confirmation
 # ---------------------------------------------------------------------------
-Write-Log 'Starting plan mode — showing checklist.'
+Write-SetupLog 'Starting plan mode — showing checklist.'
 
 if ($Silent) {
-    Write-Log 'Silent mode — skipping TUI checklist, using pre-selected items.'
+    Write-SetupLog 'Silent mode — skipping TUI checklist, using pre-selected items.'
     $selectedIds = @($preselectedIds | Where-Object { $_ })
 } else {
     $selectedIds = Invoke-TuiChecklist -Items $catalogItems -PreselectedIds $preselectedIds `
         -Title 'Windows 11 PC Setup — select items to install/configure'
 
     if ($null -eq $selectedIds) {
-        Write-Log 'User cancelled checklist (ESC).'
+        Write-SetupLog 'User cancelled checklist (ESC).'
         Write-Host ''
         Write-Host '  Setup cancelled.' -ForegroundColor Yellow
         exit 0
@@ -299,17 +301,17 @@ if ($selectedIds.Count -eq 0) {
     exit 0
 }
 
-Write-Log "Selected $($selectedIds.Count) item(s): $($selectedIds -join ', ')"
+Write-SetupLog "Selected $($selectedIds.Count) item(s): $($selectedIds -join ', ')"
 
 # Build and persist plan
 $plan = New-Plan -AllItems $catalogItems -SelectedIds $selectedIds
 Write-JsonAtomic -Path $Paths.Plan -InputObject $plan
-Write-Log "Plan written: $($Paths.Plan)"
+Write-SetupLog "Plan written: $($Paths.Plan)"
 
 # Build and persist initial state
 $state = New-State -Plan $plan
 Write-JsonAtomic -Path $Paths.State -InputObject $state
-Write-Log "State written: $($Paths.State)"
+Write-SetupLog "State written: $($Paths.State)"
 
 # Show plan summary and confirm
 Clear-Host
@@ -328,14 +330,14 @@ if ($mode -eq 'DryRun') {
     Write-Host $confirm.Character
 
     if ($confirm.Character -ne 'Y' -and $confirm.Character -ne 'y') {
-        Write-Log 'User declined confirmation.'
+        Write-SetupLog 'User declined confirmation.'
         Write-Host '  Setup cancelled.' -ForegroundColor Yellow
         exit 0
     }
 }
 
 Write-Host ''
-Write-Log 'Executing plan...'
+Write-SetupLog 'Executing plan...'
 
 # ---------------------------------------------------------------------------
 # 8. Execute
@@ -350,7 +352,7 @@ Invoke-Plan -Plan $plan -State $state `
 # ---------------------------------------------------------------------------
 Show-Report -State $state -Paths $Paths
 
-Write-Log '=== PC Setup finished ==='
+Write-SetupLog '=== PC Setup finished ==='
 
 # ---------------------------------------------------------------------------
 # Helper: Convert PSCustomObject -> mutable hashtable for state/plan

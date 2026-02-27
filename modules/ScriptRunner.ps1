@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # ScriptRunner.ps1 - Run PowerShell scripts from the catalog; update process state
 
 Set-StrictMode -Version Latest
@@ -93,21 +93,21 @@ function Invoke-ScriptStep {
     switch -CaseSensitive ($RunContext.Mode) {
 
         'DryRun' {
-            Write-Log "DRY RUN SCRIPT: $scriptPath" -Level INFO
+            Write-SetupLog "DRY RUN SCRIPT: $scriptPath" -Level INFO
             if ($parameters.Count -gt 0) {
-                Write-Log "  Parameters: $($parameters | ConvertTo-Json -Compress)" -Level INFO
+                Write-SetupLog "  Parameters: $($parameters | ConvertTo-Json -Compress)" -Level INFO
             }
             if ($explorerRequired) {
-                Write-Log "WOULD restart Explorer (restartExplorer=true on '$itemId')" -Level INFO
+                Write-SetupLog "WOULD restart Explorer (restartExplorer=true on '$itemId')" -Level INFO
             }
             try {
                 $output = & $scriptPath -Parameters $parameters -DryRun:$true
                 if ($output) {
                     foreach ($line in @($output)) {
-                        Write-Log "  $line" -Level INFO
+                        Write-SetupLog "  $line" -Level INFO
                     }
                 }
-                Write-Log "  -> Dry run completed (no changes applied)." -Level INFO
+                Write-SetupLog "  -> Dry run completed (no changes applied)." -Level INFO
                 return @{
                     Success          = $true
                     ScriptPath       = $scriptPath
@@ -115,7 +115,7 @@ function Invoke-ScriptStep {
                     Notes            = @('dryRun')
                 }
             } catch {
-                Write-Log "  -> Dry run FAILED: $($_.Exception.Message)" -Level ERROR
+                Write-SetupLog "  -> Dry run FAILED: $($_.Exception.Message)" -Level ERROR
                 return @{
                     Success          = $false
                     ScriptPath       = $scriptPath
@@ -127,10 +127,10 @@ function Invoke-ScriptStep {
         }
 
         'Mock' {
-            Write-Log "MOCK RUN SCRIPT: $scriptPath" -Level INFO
+            Write-SetupLog "MOCK RUN SCRIPT: $scriptPath" -Level INFO
             $delay = Get-Random -Minimum 200 -Maximum 800
             Start-Sleep -Milliseconds $delay
-            Write-Log "  -> Mock succeeded." -Level INFO
+            Write-SetupLog "  -> Mock succeeded." -Level INFO
             return @{
                 Success          = $true
                 ScriptPath       = $scriptPath
@@ -141,14 +141,14 @@ function Invoke-ScriptStep {
 
         'Real' {
             try {
-                Write-Log "Running script: $scriptPath" -Level INFO
+                Write-SetupLog "Running script: $scriptPath" -Level INFO
                 $output = & $scriptPath -Parameters $parameters -DryRun:$false
                 if ($output) {
                     foreach ($line in @($output)) {
-                        Write-Log "  $line" -Level INFO
+                        Write-SetupLog "  $line" -Level INFO
                     }
                 }
-                Write-Log "  -> Script succeeded." -Level INFO
+                Write-SetupLog "  -> Script succeeded." -Level INFO
                 return @{
                     Success          = $true
                     ScriptPath       = $scriptPath
@@ -156,7 +156,7 @@ function Invoke-ScriptStep {
                     Notes            = @('real')
                 }
             } catch {
-                Write-Log "  -> Script FAILED: $($_.Exception.Message)" -Level ERROR
+                Write-SetupLog "  -> Script FAILED: $($_.Exception.Message)" -Level ERROR
                 return @{
                     Success          = $false
                     ScriptPath       = $scriptPath

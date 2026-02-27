@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # TuiChecklist.Tests.ps1 - Unit tests for modules/TuiChecklist.ps1
 #
 # Focuses on the pure-logic helpers that do not interact with the console:
@@ -38,6 +38,7 @@ namespace TuiTestStubs {
     # Spec format: comma-separated tokens – 'H:CatName' for a header, 'I:id' for an item.
     # Returns [hashtable] @{ Rows = [array]; ItemIndices = [array] }
     function script:Build-Rows {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
         param([string[]]$Spec)
         $rows        = [System.Collections.Generic.List[hashtable]]::new()
         $itemIndices = [System.Collections.Generic.List[int]]::new()

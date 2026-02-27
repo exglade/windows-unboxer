@@ -2,12 +2,12 @@
 # Common.Tests.ps1 - Unit tests for modules/Common.ps1
 
 BeforeAll {
-    # Suppress console noise from Write-Log during tests
+    # Suppress console noise from Write-SetupLog during tests
     $script:ModulePath = Join-Path $PSScriptRoot '..\modules\Common.ps1'
     . $script:ModulePath
 
-    # Silence logger for the whole file (Write-Log is defined in Common.ps1)
-    Mock Write-Log {}
+    # Silence logger for the whole file (Write-SetupLog is defined in Common.ps1)
+    Mock Write-SetupLog {}
 }
 
 # ---------------------------------------------------------------------------

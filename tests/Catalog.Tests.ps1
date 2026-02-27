@@ -1,11 +1,11 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Catalog.Tests.ps1 - Unit tests for modules/Catalog.ps1
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Catalog.ps1')
 
-    Mock Write-Log {}
+    Mock Write-SetupLog {}
 
     # ---------------------------------------------------------------------------
     # Minimal catalog JSON written once for all tests
@@ -313,76 +313,76 @@ Describe 'Merge-ProfileOverrides' {
     }
 
     It 'applies a scope override to an app item' {
-        $profile = [PSCustomObject]@{
+        $profileObj = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'core.chrome' = [PSCustomObject]@{ scope = 'user' }
             }
         }
-        $result = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        $result = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $chrome = $result | Where-Object { $_.id -eq 'core.chrome' }
         $chrome.winget.scope | Should -Be 'user'
     }
 
     It 'applies an override-arg override to an app item' {
-        $profile = [PSCustomObject]@{
+        $profileObj = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'dev.vscode' = [PSCustomObject]@{ override = '/SILENT' }
             }
         }
-        $result = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        $result = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $vscode = $result | Where-Object { $_.id -eq 'dev.vscode' }
         $vscode.winget.override | Should -Be '/SILENT'
     }
 
     It 'does not mutate the original catalog item' {
         $originalScope = $script:ChromeItem.winget.scope
-        $profile = [PSCustomObject]@{
+        $profileObj = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'core.chrome' = [PSCustomObject]@{ scope = 'user' }
             }
         }
-        $null = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        $null = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $script:ChromeItem.winget.scope | Should -Be $originalScope
     }
 
     It 'leaves script items unchanged and emits a warning when non-parameter override is used' {
-        $profile = [PSCustomObject]@{
+        $profileObj = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'tweak.ext' = [PSCustomObject]@{ scope = 'user' }
             }
         }
-        Mock Write-Log {}
-        $result = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        Mock Write-SetupLog {}
+        $result = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $tweak  = $result | Where-Object { $_.id -eq 'tweak.ext' }
         $tweak.type | Should -Be 'script'
-        Should -Invoke Write-Log -ParameterFilter { $Message -like "*no 'parameters'*ignored*" }
+        Should -Invoke Write-SetupLog -ParameterFilter { $Message -like "*no 'parameters'*ignored*" }
     }
 
     It 'ignores override entries for IDs not present in the catalog' {
-        $profile = [PSCustomObject]@{
+        $profileObj = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'unknown.app' = [PSCustomObject]@{ scope = 'user' }
             }
         }
-        $result = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        $result = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $result.Count | Should -Be $script:Items.Count
     }
 
     It 'returns all items unchanged when profile has no overrides property' {
-        $profile = [PSCustomObject]@{ selectedIds = @('core.chrome') }
-        $result  = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        $profileObj = [PSCustomObject]@{ selectedIds = @('core.chrome') }
+        $result  = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $result.Count | Should -Be $script:Items.Count
         ($result | Where-Object { $_.id -eq 'core.chrome' }).winget.scope |
             Should -Be $script:ChromeItem.winget.scope
     }
 
     It 'preserves unaffected app items without changes' {
-        $profile = [PSCustomObject]@{
+        $profileObj = [PSCustomObject]@{
             overrides = [PSCustomObject]@{
                 'core.chrome' = [PSCustomObject]@{ scope = 'user' }
             }
         }
-        $result = Merge-ProfileOverrides -Items $script:Items -Profile $profile
+        $result = Merge-ProfileOverrides -Items $script:Items -ProfileData $profileObj
         $vscode = $result | Where-Object { $_.id -eq 'dev.vscode' }
         $vscode.winget.scope | Should -Be 'machine'
     }

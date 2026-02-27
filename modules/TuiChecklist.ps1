@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # TuiChecklist.ps1 - Keyboard-only interactive checklist TUI
 
 Set-StrictMode -Version Latest
@@ -17,6 +17,8 @@ $script:MIN_WINDOW_HEIGHT = $script:BANNER_HEIGHT + $script:MENU_MIN_HEIGHT + $s
 # ---------------------------------------------------------------------------
 
 function script:Show-Banner {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'TUI rendering requires direct console output via Write-Host.')]
     param(
         [string] $Title,
         [int]    $MaxWidth
@@ -48,6 +50,8 @@ function script:Show-Banner {
 }
 
 function script:Show-Footer {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'TUI rendering requires direct console output via Write-Host.')]
     param(
         [int] $FooterTop,
         [int] $MaxWidth
@@ -92,6 +96,8 @@ function script:Limit-ScrollOffset {
 }
 
 function script:Show-Checklist {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'TUI rendering requires direct console output via Write-Host.')]
     param(
         [array] $Rows,
         [array] $ItemIndices,
@@ -190,6 +196,8 @@ function Invoke-TuiChecklist {
     .PARAMETER Title
         Heading shown above the list.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'TUI rendering requires direct console output via Write-Host.')]
     param(
         [Parameter(Mandatory)]
         [array]$Items,

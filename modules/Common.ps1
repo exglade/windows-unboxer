@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Common.ps1 - Shared utilities: paths, logging, JSON I/O, environment checks
 
 Set-StrictMode -Version Latest
@@ -8,6 +8,8 @@ Set-StrictMode -Version Latest
 # ---------------------------------------------------------------------------
 
 function Get-ArtifactPaths {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification = 'Returns a collection of path values — plural noun is semantically correct.')]
     [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)]
@@ -28,6 +30,8 @@ function Get-ArtifactPaths {
 }
 
 function Initialize-ArtifactDirectories {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification = 'Initialises multiple directories — plural noun is semantically correct.')]
     param(
         [Parameter(Mandatory)]
         [hashtable]$Paths
@@ -54,10 +58,13 @@ function Initialize-Log {
 
     $timestamp      = Get-Date -Format 'yyyyMMdd_HHmmss'
     $script:LogFile = Join-Path $LogDir "setup_$timestamp.log"
-    Write-Log "=== PC Setup Log started at $(Get-Date -Format 'u') ==="
+    Write-SetupLog "=== PC Setup Log started at $(Get-Date -Format 'u') ==="
 }
 
-function Write-Log {
+function Write-SetupLog {
+
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'Logging requires coloured console output via Write-Host.')]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Message,
@@ -66,20 +73,23 @@ function Write-Log {
         [string]$Level = 'INFO'
     )
 
-    $ts   = Get-Date -Format 'HH:mm:ss'
-    $line = "[$ts][$Level] $Message"
+    process {
+        $ts   = Get-Date -Format 'HH:mm:ss'
+        $line = "[$ts][$Level] $Message"
 
-    # Console
-    switch ($Level) {
-        'WARN'  { Write-Host $line -ForegroundColor Yellow }
-        'ERROR' { Write-Host $line -ForegroundColor Red    }
-        'DEBUG' { Write-Host $line -ForegroundColor DarkGray }
-        default { Write-Host $line }
-    }
+        # Console
+        switch ($Level) {
+            'WARN'  { Write-Host $line -ForegroundColor Yellow }
+            'ERROR' { Write-Host $line -ForegroundColor Red    }
+            'DEBUG' { Write-Host $line -ForegroundColor DarkGray }
+            default { Write-Host $line }
+        }
 
-    # File
-    if ($script:LogFile) {
-        try { Add-Content -LiteralPath $script:LogFile -Value $line -Encoding UTF8 } catch {}
+        # File
+        if ($script:LogFile) {
+            try { Add-Content -LiteralPath $script:LogFile -Value $line -Encoding UTF8 }
+            catch { $null = $_ <# Intentionally ignored — logging must not interrupt the calling operation #> }
+        }
     }
 }
 
@@ -178,13 +188,15 @@ function Assert-Prerequisites {
     .SYNOPSIS
         Validates Windows 11 + winget are present. Throws if not.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification = 'Checks multiple prerequisites — plural noun is semantically correct.')]
     param(
         [Parameter(Mandatory)]
         [hashtable]$RunContext
     )
 
     if (-not (Test-Windows11)) {
-        Write-Log 'WARNING: OS is not Windows 11 (build < 22000). Continuing anyway.' -Level WARN
+        Write-SetupLog 'WARNING: OS is not Windows 11 (build < 22000). Continuing anyway.' -Level WARN
     }
 
     if ($RunContext.Mode -ne 'DryRun' -and -not (Test-WingetAvailable)) {
@@ -192,7 +204,7 @@ function Assert-Prerequisites {
     }
 
     if (-not (Test-WingetAvailable)) {
-        Write-Log 'winget not found — running in DryRun/Mock without real installs.' -Level WARN
+        Write-SetupLog 'winget not found — running in DryRun/Mock without real installs.' -Level WARN
     }
 }
 
@@ -205,6 +217,8 @@ function Invoke-ArchiveArtifacts {
     .SYNOPSIS
         Archives existing plan/state/logs into a timestamped subfolder.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification = 'Archives multiple artifacts — plural noun is semantically correct.')]
     param(
         [Parameter(Mandatory)]
         [hashtable]$Paths
@@ -217,7 +231,7 @@ function Invoke-ArchiveArtifacts {
     foreach ($file in @($Paths.Plan, $Paths.State)) {
         if (Test-Path $file) {
             Move-Item -LiteralPath $file -Destination $archive -Force
-            Write-Log "Archived: $file -> $archive"
+            Write-SetupLog "Archived: $file -> $archive"
         }
     }
 
@@ -227,5 +241,5 @@ function Invoke-ArchiveArtifacts {
         Move-Item -LiteralPath $lf.FullName -Destination $archive -Force
     }
 
-    Write-Log "Previous artifacts archived to: $archive"
+    Write-SetupLog "Previous artifacts archived to: $archive"
 }

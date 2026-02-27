@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Catalog.ps1 - Load catalog, compute priorities, determine preselected IDs
 
 Set-StrictMode -Version Latest
@@ -45,7 +45,7 @@ function Import-Catalog {
     $sorted = $items |
         Sort-Object -Property effectivePriority, category, displayName
 
-    Write-Log "Catalog loaded: $($sorted.Count) items from '$CatalogPath'"
+    Write-SetupLog "Catalog loaded: $($sorted.Count) items from '$CatalogPath'"
     return ,$sorted   # comma forces array return even for 1 item
 }
 
@@ -55,6 +55,8 @@ function Get-PreselectedIds {
         Returns the set of item IDs that should be pre-checked in the TUI
         based on DefaultSelectedCategories.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification = 'Returns a collection of IDs — plural noun is semantically correct.')]
     param(
         [AllowEmptyCollection()]
         [Parameter(Mandatory)]
@@ -106,7 +108,7 @@ function Import-Profile {
         throw "Failed to parse profile file '$ProfilePath': $_"
     }
 
-    Write-Log "Profile loaded: '$ProfilePath'"
+    Write-SetupLog "Profile loaded: '$ProfilePath'"
     return $profileData
 }
 
@@ -119,22 +121,24 @@ function Merge-ProfileOverrides {
     .OUTPUTS
         [array] of PSCustomObjects with profile overrides applied.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+        Justification = 'Merges multiple overrides — plural noun is semantically correct.')]
     param(
         [Parameter(Mandatory)]
         [AllowEmptyCollection()]
         [array]$Items,
 
         [Parameter(Mandatory)]
-        $Profile
+        $ProfileData
     )
 
     # If no overrides section, return items as-is
-    $hasOverrides = $null -ne $Profile.PSObject.Properties['overrides'] -and $null -ne $Profile.overrides
+    $hasOverrides = $null -ne $ProfileData.PSObject.Properties['overrides'] -and $null -ne $ProfileData.overrides
     if (-not $hasOverrides) {
         return ,$Items
     }
 
-    $overrides = $Profile.overrides
+    $overrides = $ProfileData.overrides
 
     $result = foreach ($item in $Items) {
         $id          = $item.id
@@ -191,11 +195,11 @@ function Merge-ProfileOverrides {
                 $clone.script = $newScript
                 $clone
             } else {
-                Write-Log "Profile override for '$id' has no 'parameters' — ignored for script items." -Level WARN
+                Write-SetupLog "Profile override for '$id' has no 'parameters' — ignored for script items." -Level WARN
                 $item
             }
         } else {
-            Write-Log "Profile override for '$id' ignored — overrides are only supported for 'app' and 'script' items." -Level WARN
+            Write-SetupLog "Profile override for '$id' ignored — overrides are only supported for 'app' and 'script' items." -Level WARN
             $item
         }
     }
