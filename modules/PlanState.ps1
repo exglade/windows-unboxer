@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # PlanState.ps1 - Build plan.json / state.json, load existing state, resume menu
 
 Set-StrictMode -Version Latest
@@ -30,6 +30,8 @@ function New-Plan {
         Builds a plan object from the selected catalog item IDs.
         Steps are ordered by effectivePriority, then category, then displayName.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'New-Plan builds an in-memory hashtable — no system state is changed.')]
     param(
         [AllowEmptyCollection()]
         [Parameter(Mandatory)]
@@ -95,6 +97,8 @@ function New-State {
     .SYNOPSIS
         Creates a fresh state object from a plan. All steps start as Pending.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Creates an in-memory state object — does not modify system state.')]
     param(
         [Parameter(Mandatory)]
         [hashtable]$Plan
@@ -145,6 +149,8 @@ function Update-StateStep {
         Updates a step in the state hashtable in-place.
         Call Write-JsonAtomic after this to persist.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Mutates an in-memory hashtable — does not modify system state directly.')]
     param(
         [Parameter(Mandatory)]
         $State,
@@ -184,12 +190,11 @@ function Invoke-ResumeMenu {
         Returns a hashtable: @{ Action = 'ResumePending'|'RerunFailed'|'StartOver'|'ViewReport'|'Cancel' }
         or $null on ESC/cancel.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'CLI tool — interactive menu requires coloured console output.')]
     param(
         [Parameter(Mandatory)]
-        $State,
-
-        [Parameter(Mandatory)]
-        [hashtable]$Paths
+        $State
     )
 
     $pendingCount    = @($State.steps | Where-Object { $_.status -eq 'Pending'    }).Count
@@ -238,6 +243,8 @@ function Invoke-ResumeMenu {
 # ---------------------------------------------------------------------------
 
 function Show-Report {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'CLI tool — report display requires coloured console output.')]
     param(
         [Parameter(Mandatory)]
         $State,
@@ -277,6 +284,8 @@ function Show-Report {
 # ---------------------------------------------------------------------------
 
 function Show-PlanSummary {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'CLI tool — plan summary requires coloured console output.')]
     param(
         [Parameter(Mandatory)]
         [hashtable]$Plan,

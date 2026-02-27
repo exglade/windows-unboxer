@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Tweaks.ps1 - Explorer restart helpers
 
 Set-StrictMode -Version Latest
@@ -8,10 +8,14 @@ Set-StrictMode -Version Latest
 # ---------------------------------------------------------------------------
 
 function Restart-Explorer {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    Write-Log 'Restarting Explorer...' -Level INFO
+    if (-not $PSCmdlet.ShouldProcess('explorer.exe', 'Restart')) {
+        return
+    }
+
+    Write-SetupLog 'Restarting Explorer...' -Level INFO
 
     # Stop all explorer instances
     Get-Process -Name explorer -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -24,7 +28,7 @@ function Restart-Explorer {
         Start-Sleep -Milliseconds 1500
     }
 
-    Write-Log 'Explorer restarted.' -Level INFO
+    Write-SetupLog 'Explorer restarted.' -Level INFO
 }
 
 # ---------------------------------------------------------------------------
@@ -37,6 +41,8 @@ function Invoke-ExplorerRestartPrompt {
         Prompts user to restart Explorer after all tweaks are done.
         Skipped in DryRun and when TweakTarget=Test.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'CLI tool — interactive prompt requires coloured console output.')]
     param(
         [Parameter(Mandatory)]
         [hashtable]$RunContext
@@ -47,7 +53,7 @@ function Invoke-ExplorerRestartPrompt {
     }
 
     if ($RunContext.Silent) {
-        Write-Log 'Silent mode — restarting Explorer automatically.' -Level INFO
+        Write-SetupLog 'Silent mode — restarting Explorer automatically.' -Level INFO
         Restart-Explorer
         return
     }
@@ -62,6 +68,6 @@ function Invoke-ExplorerRestartPrompt {
     if ($key.Character -eq 'Y' -or $key.Character -eq 'y') {
         Restart-Explorer
     } else {
-        Write-Log 'Explorer restart deferred by user.' -Level INFO
+        Write-SetupLog 'Explorer restart deferred by user.' -Level INFO
     }
 }

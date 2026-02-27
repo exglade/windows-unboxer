@@ -1,11 +1,11 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Tweaks.Tests.ps1 - Unit tests for modules/Tweaks.ps1
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Tweaks.ps1')
 
-    Mock Write-Log {}
+    Mock Write-SetupLog {}
 }
 
 # ---------------------------------------------------------------------------
@@ -26,12 +26,12 @@ Describe 'Restart-Explorer' {
     }
 
     It 'stops running explorer process instances' {
-        Restart-Explorer
+        Restart-Explorer -Confirm:$false
         Should -Invoke Stop-Process -Times 1
     }
 
     It 'does not start explorer.exe when it is already running after stop attempt' {
-        Restart-Explorer
+        Restart-Explorer -Confirm:$false
         Should -Invoke Start-Process -Times 0 -ParameterFilter { $FilePath -eq 'explorer.exe' }
     }
 }
@@ -57,7 +57,7 @@ Describe 'Restart-Explorer when explorer is not running' {
     }
 
     It 'starts explorer.exe when no explorer process is detected after stop' {
-        Restart-Explorer
+        Restart-Explorer -Confirm:$false
         Should -Invoke Start-Process -Times 1 -ParameterFilter { $FilePath -eq 'explorer.exe' }
     }
 }

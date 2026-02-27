@@ -10,6 +10,10 @@
 .PARAMETER DryRun
     When present, logs what would be done without making changes.
 #>
+# PSScriptAnalyzer: $Parameters is required by the script runner contract even
+# when unused by this particular script.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'Parameters',
+    Justification = 'Required by the script runner contract.')]
 param(
     [hashtable]$Parameters = @{},
     [switch]$DryRun

@@ -1,11 +1,11 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # PlanState.Tests.ps1 - Unit tests for modules/PlanState.ps1
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
     . (Join-Path $PSScriptRoot '..\modules\PlanState.ps1')
 
-    Mock Write-Log {}
+    Mock Write-SetupLog {}
     Mock Get-OsVersion { 'Windows 11 Pro' }
 
     # ---------------------------------------------------------------------------
@@ -34,10 +34,10 @@ BeforeAll {
     }
 
     $script:AllItems = @(
-        (script:New-MockCatalogItem 'tweak.ext'    'Tweaks'       'Show extensions'    50  'script'),
-        (script:New-MockCatalogItem 'core.chrome'  'Core'         'Google Chrome'     200  'app'),
-        (script:New-MockCatalogItem 'dev.vscode'   'Dev'          'VS Code'           300  'app'),
-        (script:New-MockCatalogItem 'prod.npp'     'Productivity' 'Notepad++'         510  'app')
+        (script:New-MockCatalogItem -Id 'tweak.ext'    -Category 'Tweaks'       -DisplayName 'Show extensions'    -Priority 50  -Type 'script'),
+        (script:New-MockCatalogItem -Id 'core.chrome'  -Category 'Core'         -DisplayName 'Google Chrome'     -Priority 200  -Type 'app'),
+        (script:New-MockCatalogItem -Id 'dev.vscode'   -Category 'Dev'          -DisplayName 'VS Code'           -Priority 300  -Type 'app'),
+        (script:New-MockCatalogItem -Id 'prod.npp'     -Category 'Productivity' -DisplayName 'Notepad++'         -Priority 510  -Type 'app')
     )
 }
 

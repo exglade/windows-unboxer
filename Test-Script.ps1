@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Validates that a PowerShell script conforms to the script runner contract.
 
@@ -26,6 +26,8 @@
     .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1 -SkipRealRun
     .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1 -Parameters @{ key = 'value' }
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'CLI validation tool — requires coloured console output via Write-Host.')]
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
@@ -84,14 +86,14 @@ $resolvedPath = $null
 try {
     $resolvedPath = Resolve-Path $ScriptPath -ErrorAction Stop | Select-Object -ExpandProperty Path
 } catch {
-    # Ignore - will be caught in test 1
+    $null = $_ # Intentionally ignored — failure is detected in test 1
 }
 
 # ---------------------------------------------------------------------------
 # Test 1: File exists and is .ps1
 # ---------------------------------------------------------------------------
 $exists = ($null -ne $resolvedPath) -and (Test-Path $resolvedPath) -and ($resolvedPath -like '*.ps1')
-Write-TestResult 'Script file exists and is .ps1' $exists $(if (-not $exists) { "Path: $ScriptPath" } else { '' })
+Write-TestResult -Name 'Script file exists and is .ps1' -Passed $exists -Detail $(if (-not $exists) { "Path: $ScriptPath" } else { '' })
 
 if (-not $exists) {
     Write-Host ''
@@ -106,12 +108,12 @@ if (-not $exists) {
 $dryRunPassed = $false
 $dryRunError  = ''
 try {
-    $output = & $resolvedPath -Parameters $Parameters -DryRun 2>&1
+    $null = & $resolvedPath -Parameters $Parameters -DryRun 2>&1
     $dryRunPassed = $true
 } catch {
     $dryRunError = $_.Exception.Message
 }
-Write-TestResult 'DryRun completes without error' $dryRunPassed $dryRunError
+Write-TestResult -Name 'DryRun completes without error' -Passed $dryRunPassed -Detail $dryRunError
 
 # ---------------------------------------------------------------------------
 # Test 3: DryRun status via script runner
@@ -142,7 +144,7 @@ try {
 } catch {
     $dryRunStatusError = $_.Exception.Message
 }
-Write-TestResult 'Runner reports Succeeded in DryRun mode' $dryRunStatusPassed $dryRunStatusError
+Write-TestResult -Name 'Runner reports Succeeded in DryRun mode' -Passed $dryRunStatusPassed -Detail $dryRunStatusError
 
 # ---------------------------------------------------------------------------
 # Test 4: Real run completes and runner reports end state (optional)
@@ -172,7 +174,7 @@ if (-not $SkipRealRun) {
     } catch {
         $realRunError = $_.Exception.Message
     }
-    Write-TestResult 'Real run completes and runner reports Succeeded' $realRunPassed $realRunError
+    Write-TestResult -Name 'Real run completes and runner reports Succeeded' -Passed $realRunPassed -Detail $realRunError
 } else {
     Write-Host '  [SKIP] Real run (--SkipRealRun)' -ForegroundColor Yellow
 }

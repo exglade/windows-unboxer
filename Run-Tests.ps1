@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Runs all Pester unit tests for the PC Setup tool.
 
@@ -16,6 +16,8 @@
     .\Run-Tests.ps1 -Output Detailed
     .\Run-Tests.ps1 -TestPath .\tests\Common.Tests.ps1
 #>
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Test runner — requires coloured console output via Write-Host.')]
 [CmdletBinding()]
 param(
     [string]$TestPath = (Join-Path $PSScriptRoot 'tests'),

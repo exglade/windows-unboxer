@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # Executor.ps1 - Execute plan steps, update state, log results
 
 Set-StrictMode -Version Latest
@@ -44,7 +44,7 @@ function Invoke-WingetInstall {
     $ts      = Get-Date -Format 'HHmmss_fff'
     $logFile = Join-Path $LogDir "winget_$ts.log"
 
-    Write-Log "EXEC: $Command"
+    Write-SetupLog "EXEC: $Command"
 
     # Launch via cmd /c to capture both stdout+stderr
     $pInfo                        = [System.Diagnostics.ProcessStartInfo]::new('cmd.exe', "/c $Command")
@@ -59,8 +59,8 @@ function Invoke-WingetInstall {
     $sbOut = [System.Text.StringBuilder]::new()
     $sbErr = [System.Text.StringBuilder]::new()
 
-    $proc.OutputDataReceived += { param($s, $e); if ($null -ne $e.Data) { [void]$sbOut.AppendLine($e.Data) } }
-    $proc.ErrorDataReceived  += { param($s, $e); if ($null -ne $e.Data) { [void]$sbErr.AppendLine($e.Data) } }
+    $proc.OutputDataReceived += { param($s, $e); $null = $s; if ($null -ne $e.Data) { [void]$sbOut.AppendLine($e.Data) } }
+    $proc.ErrorDataReceived  += { param($s, $e); $null = $s; if ($null -ne $e.Data) { [void]$sbErr.AppendLine($e.Data) } }
 
     [void]$proc.Start()
     $proc.BeginOutputReadLine()
@@ -71,7 +71,8 @@ function Invoke-WingetInstall {
     $combined  = $sbOut.ToString() + $sbErr.ToString()
 
     # Save to per-step log
-    try { [System.IO.File]::WriteAllText($logFile, $combined, [System.Text.Encoding]::UTF8) } catch {}
+    try { [System.IO.File]::WriteAllText($logFile, $combined, [System.Text.Encoding]::UTF8) }
+    catch { $null = $_ <# Intentionally ignored — best-effort log write #> }
 
     # winget exit codes:
     #   0       = success
@@ -85,13 +86,13 @@ function Invoke-WingetInstall {
 
     if ($exitCode -eq 0 -or $alreadyInstalled) {
         if ($alreadyInstalled -and $exitCode -ne 0) {
-            Write-Log "  -> Already installed (treated as success). Exit: $exitCode"
+            Write-SetupLog "  -> Already installed (treated as success). Exit: $exitCode"
         } else {
-            Write-Log "  -> Succeeded. Exit: $exitCode"
+            Write-SetupLog "  -> Succeeded. Exit: $exitCode"
         }
         return @{ Success = $true;  Output = $combined; ExitCode = $exitCode }
     } else {
-        Write-Log "  -> FAILED. Exit: $exitCode" -Level ERROR
+        Write-SetupLog "  -> FAILED. Exit: $exitCode" -Level ERROR
         return @{ Success = $false; Output = $combined; ExitCode = $exitCode }
     }
 }
@@ -124,14 +125,14 @@ function Invoke-AppStep {
     switch ($RunContext.Mode) {
 
         'DryRun' {
-            Write-Log "WOULD RUN: $cmd" -Level INFO
+            Write-SetupLog "WOULD RUN: $cmd" -Level INFO
             return @{ Success = $true; Command = $cmd; Error = $null; Notes = @('dryRun'); TargetPaths = @() }
         }
 
         'Mock' {
             # Simulated failure?
             if ($RunContext.FailStepId -and $RunContext.FailStepId -eq $Step.id) {
-                Write-Log "MOCK FAIL: $($Step.id) (simulated failure)" -Level WARN
+                Write-SetupLog "MOCK FAIL: $($Step.id) (simulated failure)" -Level WARN
                 return @{
                     Success     = $false
                     Command     = $cmd
@@ -143,9 +144,9 @@ function Invoke-AppStep {
 
             # Simulate work
             $delay = Get-Random -Minimum 200 -Maximum 800
-            Write-Log "MOCK: $cmd  (sleeping ${delay}ms)"
+            Write-SetupLog "MOCK: $cmd  (sleeping ${delay}ms)"
             Start-Sleep -Milliseconds $delay
-            Write-Log "  -> Mock succeeded."
+            Write-SetupLog "  -> Mock succeeded."
             return @{ Success = $true; Command = $cmd; Error = $null; Notes = @('mock'); TargetPaths = @() }
         }
 
@@ -191,7 +192,7 @@ function Invoke-ScriptStepDispatch {
     )
 
     if ($RunContext.Mode -eq 'Mock' -and $RunContext.FailStepId -and $RunContext.FailStepId -eq $Step.id) {
-        Write-Log "MOCK FAIL: $($Step.id) (simulated failure on script)" -Level WARN
+        Write-SetupLog "MOCK FAIL: $($Step.id) (simulated failure on script)" -Level WARN
         return @{
             Success          = $false
             ScriptPath       = $null
@@ -247,6 +248,8 @@ function Invoke-Plan {
     .PARAMETER ResumeOption
         'ResumePending' | 'RerunFailed' | 'All'
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+        Justification = 'CLI tool — execution summary requires coloured console output.')]
     param(
         [Parameter(Mandatory)]
         $Plan,
@@ -281,13 +284,13 @@ function Invoke-Plan {
         $stateStep = $State.steps | Where-Object { $_.id -eq $step.id } | Select-Object -First 1
 
         if (-not $stateStep) {
-            Write-Log "Step '$($step.id)' not found in state — skipping." -Level WARN
+            Write-SetupLog "Step '$($step.id)' not found in state — skipping." -Level WARN
             continue
         }
 
         # Skip steps not in eligible statuses
         if ($eligibleStatuses -notcontains $stateStep.status) {
-            Write-Log "Step '$($step.id)' status='$($stateStep.status)' — skipping (not eligible for '$ResumeOption')."
+            Write-SetupLog "Step '$($step.id)' status='$($stateStep.status)' — skipping (not eligible for '$ResumeOption')."
             continue
         }
 
@@ -295,7 +298,7 @@ function Invoke-Plan {
         $catalogItem = $CatalogItems | Where-Object { $_.id -eq $step.id } | Select-Object -First 1
 
         if (-not $catalogItem) {
-            Write-Log "Catalog item not found for '$($step.id)' — marking Failed." -Level WARN
+            Write-SetupLog "Catalog item not found for '$($step.id)' — marking Failed." -Level WARN
             Update-StateStep -State $State -Id $step.id `
                 -Status 'Failed' -StartedAt (Get-Date -Format 'o') -EndedAt (Get-Date -Format 'o') `
                 -ErrorInfo @{ message = "Catalog item not found: $($step.id)" }
@@ -305,7 +308,7 @@ function Invoke-Plan {
         }
 
         # Mark InProgress
-        Write-Log "--- Starting step: $($step.id) ($($step.type)) ---"
+        Write-SetupLog "--- Starting step: $($step.id) ($($step.type)) ---"
         Update-StateStep -State $State -Id $step.id `
             -Status 'InProgress' -StartedAt (Get-Date -Format 'o')
         Write-JsonAtomic -Path $statePath -InputObject $State
@@ -344,7 +347,7 @@ function Invoke-Plan {
                 -Notes     ($result.Notes) `
                 -Command   ($result['Command']) `
                 -TargetPath $targetPath
-            Write-Log "Step '$($step.id)' SUCCEEDED."
+            Write-SetupLog "Step '$($step.id)' SUCCEEDED."
         } else {
             $failedSteps++
             Update-StateStep -State $State -Id $step.id `
@@ -353,10 +356,10 @@ function Invoke-Plan {
                 -ErrorInfo ($result['Error']) `
                 -Notes     ($result.Notes) `
                 -Command   ($result['Command'])
-            Write-Log "Step '$($step.id)' FAILED: $(if ($result['Error']) { $result['Error'].message } else { 'Unknown error' })" -Level ERROR
+            Write-SetupLog "Step '$($step.id)' FAILED: $(if ($result['Error']) { $result['Error'].message } else { 'Unknown error' })" -Level ERROR
 
             # Stop on first failure
-            Write-Log 'Stopping execution due to step failure (stop-on-failure policy).' -Level WARN
+            Write-SetupLog 'Stopping execution due to step failure (stop-on-failure policy).' -Level WARN
             Write-JsonAtomic -Path $statePath -InputObject $State
             break
         }

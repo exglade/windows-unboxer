@@ -1,4 +1,5 @@
 # Generated artifacts
 setup-artifacts/
 
+# Pester
 coverage.xml

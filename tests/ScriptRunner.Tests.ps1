@@ -1,16 +1,18 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 # ScriptRunner.Tests.ps1 - Unit tests for modules/ScriptRunner.ps1
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
     . (Join-Path $PSScriptRoot '..\modules\ScriptRunner.ps1')
 
-    Mock Write-Log {}
+    Mock Write-SetupLog {}
 
     # ---------------------------------------------------------------------------
     # Helpers
     # ---------------------------------------------------------------------------
     function script:New-TestPaths {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
+        param()
         return @{
             Root      = $TestDrive
             Artifacts = $TestDrive
