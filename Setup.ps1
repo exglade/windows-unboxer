@@ -75,6 +75,7 @@ $moduleFiles = @(
     'TuiChecklist.ps1',
     'PlanState.ps1',
     'Tweaks.ps1',
+    'ScriptRunner.ps1',
     'Executor.ps1'
 )
 

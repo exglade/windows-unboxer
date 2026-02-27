@@ -146,29 +146,58 @@ function Merge-ProfileOverrides {
             continue
         }
 
-        if ($item.type -ne 'app') {
-            Write-Log "Profile override for '$id' ignored — overrides are only supported for 'app' items." -Level WARN
+        if ($item.type -eq 'app') {
+            $ov = $ovProp.Value
+
+            # Build patched winget block (only scope and override are overridable)
+            $newScope    = if ($null -ne $ov.PSObject.Properties['scope']    -and $null -ne $ov.scope)    { $ov.scope    } else { $item.winget.scope    }
+            $newOverride = if ($null -ne $ov.PSObject.Properties['override'])                              { $ov.override } else { $item.winget.override }
+
+            $newWinget = [PSCustomObject]@{
+                id       = $item.winget.id
+                source   = $item.winget.source
+                scope    = $newScope
+                override = $newOverride
+            }
+
+            # Shallow-clone the item and replace the winget block
+            $clone        = $item | Select-Object -Property *
+            $clone.winget = $newWinget
+            $clone
+        } elseif ($item.type -eq 'script') {
+            $ov = $ovProp.Value
+
+            # Only 'parameters' is overridable for script items
+            if ($null -ne $ov.PSObject.Properties['parameters'] -and $null -ne $ov.parameters) {
+                # Shallow-clone the item and merge parameters
+                $clone = $item | Select-Object -Property *
+
+                # Build patched script block with merged parameters
+                $baseParams = @{}
+                if ($null -ne $item.script.PSObject.Properties['parameters'] -and $null -ne $item.script.parameters) {
+                    foreach ($prop in $item.script.parameters.PSObject.Properties) {
+                        $baseParams[$prop.Name] = $prop.Value
+                    }
+                }
+                foreach ($prop in $ov.parameters.PSObject.Properties) {
+                    $baseParams[$prop.Name] = $prop.Value
+                }
+
+                $newScript = [PSCustomObject]@{
+                    path            = $item.script.path
+                    parameters      = [PSCustomObject]$baseParams
+                    restartExplorer = if ($null -ne $item.script.PSObject.Properties['restartExplorer']) { $item.script.restartExplorer } else { $false }
+                }
+                $clone.script = $newScript
+                $clone
+            } else {
+                Write-Log "Profile override for '$id' has no 'parameters' — ignored for script items." -Level WARN
+                $item
+            }
+        } else {
+            Write-Log "Profile override for '$id' ignored — overrides are only supported for 'app' and 'script' items." -Level WARN
             $item
-            continue
         }
-
-        $ov = $ovProp.Value
-
-        # Build patched winget block (only scope and override are overridable)
-        $newScope    = if ($null -ne $ov.PSObject.Properties['scope']    -and $null -ne $ov.scope)    { $ov.scope    } else { $item.winget.scope    }
-        $newOverride = if ($null -ne $ov.PSObject.Properties['override'])                              { $ov.override } else { $item.winget.override }
-
-        $newWinget = [PSCustomObject]@{
-            id       = $item.winget.id
-            source   = $item.winget.source
-            scope    = $newScope
-            override = $newOverride
-        }
-
-        # Shallow-clone the item and replace the winget block
-        $clone        = $item | Select-Object -Property *
-        $clone.winget = $newWinget
-        $clone
     }
 
     return ,$result

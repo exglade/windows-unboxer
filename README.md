@@ -2,7 +2,7 @@
 
 An interactive automated Windows PC setup with PowerShell.
 
-Installs apps via **winget** and applies **registry tweaks** — using a keyboard-navigable terminal UI. Runs can be interrupted and resumed; a full report is shown at the end.
+Installs apps via **winget** and runs **PowerShell scripts** for configuration — using a keyboard-navigable terminal UI. Runs can be interrupted and resumed; a full report is shown at the end.
 
 Feel free to fork this and modify the `catalog.json` for your own usage.
 
@@ -113,7 +113,7 @@ Copy `profile.example.json` as a starting point and adjust to your needs. Both f
 | Field | Description |
 |---|---|
 | `selectedIds` | Items pre-checked in the TUI. Replaces the default category-based selection. The user can still toggle items before confirming. With `-Silent`, the TUI is skipped entirely and these IDs are used as-is. |
-| `overrides` | Per-app winget overrides keyed by item ID. Only `scope` and `override` can be changed; `id` and `source` are fixed. Silently ignored for `tweak` items. |
+| `overrides` | Per-item overrides keyed by item ID. For app items: `scope` and `override` can be changed; `id` and `source` are fixed. For script items: `parameters` can be overridden to customise script behaviour. |
 
 ## Catalog
 
@@ -135,23 +135,23 @@ Items are defined in `catalog.json`. There are two types:
 }
 ```
 
-**Tweak** — registry write:
+**Script** — runs a PowerShell script:
 ```json
 {
   "id": "tweak.showExtensions",
-  "type": "tweak",
+  "type": "script",
   "category": "Tweaks",
   "displayName": "Show file extensions",
   "priority": 50,
-  "tweak": {
-    "kind": "registry",
-    "actions": [
-      { "path": "HKCU:\\...", "name": "HideFileExt", "type": "DWord", "value": 0 }
-    ],
+  "script": {
+    "path": "scripts/tweak-show-extensions.ps1",
+    "parameters": {},
     "restartExplorer": true
   }
 }
 ```
+
+Scripts accept `-Parameters` (hashtable) and `-DryRun` (switch). See [docs/writing-scripts.md](docs/writing-scripts.md) for the full guide on writing scripts for the runner.
 
 Items in the `Core`, `Dev`, and `Tweaks` categories are pre-checked by default. Lower `priority` values run first.
 
@@ -159,14 +159,18 @@ Items in the `Core`, `Dev`, and `Tweaks` categories are pre-checked by default. 
 
 ```text
 Setup.ps1            # Entry point and orchestrator
-catalog.json         # App and tweak definitions
+Test-Script.ps1      # Script validator (test your scripts)
+catalog.json         # App and script definitions
 modules/
   Catalog.ps1        # Load and query catalog.json
   Common.ps1         # Logging, JSON I/O, prerequisite checks
-  Executor.ps1       # Run plan steps (winget installs, tweak dispatching)
+  Executor.ps1       # Run plan steps (winget installs, script dispatching)
   PlanState.ps1      # Build plan/state, resume menu, report
+  ScriptRunner.ps1   # PowerShell script runner
   TuiChecklist.ps1   # Interactive terminal checklist UI
-  Tweaks.ps1         # Registry tweak application
+  Tweaks.ps1         # Explorer restart helpers
+scripts/             # PowerShell scripts for catalog script items
+docs/                # Documentation
 setup-artifacts/     # Logs, plan.json, state.json (generated at runtime)
 tests/               # Pester unit tests
 ```

@@ -5,46 +5,26 @@
   "items": [
     {
       "id": "tweak.showExtensions",
-      "type": "tweak",
+      "type": "script",
       "category": "Tweaks",
       "displayName": "Show file extensions",
       "priority": 50,
-      "tweak": {
-        "kind": "registry",
-        "actions": [
-          {
-            "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
-            "name": "HideFileExt",
-            "type": "DWord",
-            "value": 0
-          }
-        ],
+      "script": {
+        "path": "scripts/tweak-show-extensions.ps1",
+        "parameters": {},
         "restartExplorer": true
       },
       "requiresReboot": false
     },
     {
       "id": "tweak.showHiddenFiles",
-      "type": "tweak",
+      "type": "script",
       "category": "Tweaks",
       "displayName": "Show hidden files",
       "priority": 51,
-      "tweak": {
-        "kind": "registry",
-        "actions": [
-          {
-            "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
-            "name": "Hidden",
-            "type": "DWord",
-            "value": 1
-          },
-          {
-            "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
-            "name": "ShowSuperHidden",
-            "type": "DWord",
-            "value": 1
-          }
-        ],
+      "script": {
+        "path": "scripts/tweak-show-hidden-files.ps1",
+        "parameters": {},
         "restartExplorer": true
       },
       "requiresReboot": false

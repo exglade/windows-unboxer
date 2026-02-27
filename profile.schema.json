@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "profile.schema.json",
   "title": "pc-setup Profile",
-  "description": "Profile file for pre-selecting items and overriding per-app winget settings.",
+  "description": "Profile file for pre-selecting items and overriding per-item settings.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -20,27 +20,32 @@
     },
     "overrides": {
       "type": "object",
-      "description": "Per-item winget overrides keyed by item ID. Only applies to 'app' items; entries for 'tweak' items are ignored with a warning.",
+      "description": "Per-item overrides keyed by item ID. For 'app' items: scope and override. For 'script' items: parameters.",
       "additionalProperties": {
-        "$ref": "#/definitions/appOverride"
+        "$ref": "#/definitions/itemOverride"
       }
     }
   },
   "definitions": {
-    "appOverride": {
+    "itemOverride": {
       "type": "object",
-      "description": "Overridable winget fields for an app item. 'id' and 'source' are not overridable.",
+      "description": "Overridable fields for an item. 'scope' and 'override' apply to app items; 'parameters' applies to script items.",
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
         "scope": {
           "type": "string",
           "enum": ["machine", "user"],
-          "description": "Override the install scope. 'machine' installs for all users; 'user' for the current user only."
+          "description": "Override the install scope (app items only). 'machine' installs for all users; 'user' for the current user only."
         },
         "override": {
           "type": ["string", "null"],
-          "description": "Override the raw installer argument string passed to winget via --override (e.g. '/SILENT /MERGETASKS=!runcode')."
+          "description": "Override the raw installer argument string passed to winget via --override (app items only)."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Override parameters for script items. Merged with the catalog-defined parameters.",
+          "additionalProperties": true
         }
       }
     }
