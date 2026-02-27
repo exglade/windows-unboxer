@@ -261,6 +261,20 @@ Describe 'Invoke-ScriptStep - script not found' {
 }
 
 # ---------------------------------------------------------------------------
+# Invoke-ScriptStep — Invalid mode
+# ---------------------------------------------------------------------------
+
+Describe 'Invoke-ScriptStep - invalid mode' {
+
+    It 'throws for unsupported RunContext.Mode values' {
+        $ctx  = script:Make-Ctx -Mode 'REAL'
+        $item = script:New-ScriptItem -ScriptPath 'test-script.ps1'
+        { Invoke-ScriptStep -CatalogItem $item -RunContext $ctx } |
+            Should -Throw "*Unsupported RunContext.Mode*"
+    }
+}
+
+# ---------------------------------------------------------------------------
 # Invoke-ScriptStep — Parameters passing
 # ---------------------------------------------------------------------------
 

@@ -78,9 +78,6 @@ function Invoke-ScriptStep {
 
     $scriptConfig = $CatalogItem.script
     $itemId       = $CatalogItem.id
-    $isDryRun     = ($RunContext.Mode -eq 'DryRun')
-    $isMock       = ($RunContext.Mode -eq 'Mock')
-
     # Resolve the script file
     $scriptPath = Resolve-ScriptPath -RelativePath $scriptConfig.path -RootDir $RunContext.Paths.Root
 
@@ -93,79 +90,85 @@ function Invoke-ScriptStep {
         $explorerRequired = $true
     }
 
-    # ---- DryRun ----
-    if ($isDryRun) {
-        Write-Log "DRY RUN SCRIPT: $scriptPath" -Level INFO
-        if ($parameters.Count -gt 0) {
-            Write-Log "  Parameters: $($parameters | ConvertTo-Json -Compress)" -Level INFO
-        }
-        if ($explorerRequired) {
-            Write-Log "WOULD restart Explorer (restartExplorer=true on '$itemId')" -Level INFO
-        }
-        try {
-            $output = & $scriptPath -Parameters $parameters -DryRun:$true
-            if ($output) {
-                foreach ($line in @($output)) {
-                    Write-Log "  $line" -Level INFO
+    switch -CaseSensitive ($RunContext.Mode) {
+
+        'DryRun' {
+            Write-Log "DRY RUN SCRIPT: $scriptPath" -Level INFO
+            if ($parameters.Count -gt 0) {
+                Write-Log "  Parameters: $($parameters | ConvertTo-Json -Compress)" -Level INFO
+            }
+            if ($explorerRequired) {
+                Write-Log "WOULD restart Explorer (restartExplorer=true on '$itemId')" -Level INFO
+            }
+            try {
+                $output = & $scriptPath -Parameters $parameters -DryRun:$true
+                if ($output) {
+                    foreach ($line in @($output)) {
+                        Write-Log "  $line" -Level INFO
+                    }
+                }
+                Write-Log "  -> Dry run completed (no changes applied)." -Level INFO
+                return @{
+                    Success          = $true
+                    ScriptPath       = $scriptPath
+                    ExplorerRequired = $explorerRequired
+                    Notes            = @('dryRun')
+                }
+            } catch {
+                Write-Log "  -> Dry run FAILED: $($_.Exception.Message)" -Level ERROR
+                return @{
+                    Success          = $false
+                    ScriptPath       = $scriptPath
+                    ExplorerRequired = $false
+                    Error            = @{ message = $_.Exception.Message }
+                    Notes            = @('dryRun')
                 }
             }
-            Write-Log "  -> Dry run completed (no changes applied)." -Level INFO
+        }
+
+        'Mock' {
+            Write-Log "MOCK RUN SCRIPT: $scriptPath" -Level INFO
+            $delay = Get-Random -Minimum 200 -Maximum 800
+            Start-Sleep -Milliseconds $delay
+            Write-Log "  -> Mock succeeded." -Level INFO
             return @{
                 Success          = $true
                 ScriptPath       = $scriptPath
                 ExplorerRequired = $explorerRequired
-                Notes            = @('dryRun')
-            }
-        } catch {
-            Write-Log "  -> Dry run FAILED: $($_.Exception.Message)" -Level ERROR
-            return @{
-                Success          = $false
-                ScriptPath       = $scriptPath
-                ExplorerRequired = $false
-                Error            = @{ message = $_.Exception.Message }
-                Notes            = @('dryRun')
+                Notes            = @('mock')
             }
         }
-    }
 
-    # ---- Mock ----
-    if ($isMock) {
-        Write-Log "MOCK RUN SCRIPT: $scriptPath" -Level INFO
-        $delay = Get-Random -Minimum 200 -Maximum 800
-        Start-Sleep -Milliseconds $delay
-        Write-Log "  -> Mock succeeded." -Level INFO
-        return @{
-            Success          = $true
-            ScriptPath       = $scriptPath
-            ExplorerRequired = $explorerRequired
-            Notes            = @('mock')
-        }
-    }
-
-    # ---- Real ----
-    try {
-        Write-Log "Running script: $scriptPath" -Level INFO
-        $output = & $scriptPath -Parameters $parameters -DryRun:$false
-        if ($output) {
-            foreach ($line in @($output)) {
-                Write-Log "  $line" -Level INFO
+        'Real' {
+            try {
+                Write-Log "Running script: $scriptPath" -Level INFO
+                $output = & $scriptPath -Parameters $parameters -DryRun:$false
+                if ($output) {
+                    foreach ($line in @($output)) {
+                        Write-Log "  $line" -Level INFO
+                    }
+                }
+                Write-Log "  -> Script succeeded." -Level INFO
+                return @{
+                    Success          = $true
+                    ScriptPath       = $scriptPath
+                    ExplorerRequired = $explorerRequired
+                    Notes            = @('real')
+                }
+            } catch {
+                Write-Log "  -> Script FAILED: $($_.Exception.Message)" -Level ERROR
+                return @{
+                    Success          = $false
+                    ScriptPath       = $scriptPath
+                    ExplorerRequired = $false
+                    Error            = @{ message = $_.Exception.Message }
+                    Notes            = @('real')
+                }
             }
         }
-        Write-Log "  -> Script succeeded." -Level INFO
-        return @{
-            Success          = $true
-            ScriptPath       = $scriptPath
-            ExplorerRequired = $explorerRequired
-            Notes            = @('real')
-        }
-    } catch {
-        Write-Log "  -> Script FAILED: $($_.Exception.Message)" -Level ERROR
-        return @{
-            Success          = $false
-            ScriptPath       = $scriptPath
-            ExplorerRequired = $false
-            Error            = @{ message = $_.Exception.Message }
-            Notes            = @('real')
+
+        default {
+            throw "Unsupported RunContext.Mode '$($RunContext.Mode)'. Expected 'Real', 'DryRun', or 'Mock'."
         }
     }
 }
