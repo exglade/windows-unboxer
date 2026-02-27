@@ -112,7 +112,7 @@ Copy `profile.example.json` as a starting point and adjust to your needs. Both f
 
 | Field | Description |
 |---|---|
-| `selectedIds` | Items pre-checked in the TUI. Replaces the default category-based selection. The user can still toggle items before confirming. With `-Silent`, the TUI is skipped entirely and these IDs are used as-is. |
+| `selectedIds` | Items pre-checked in the Main Menu. Replaces the default category-based selection. The user can still toggle items before confirming. With `-Silent`, the Main Menu is skipped entirely and these IDs are used as-is. |
 | `overrides` | Per-item overrides keyed by item ID. For app items: `scope` and `override` can be changed; `id` and `source` are fixed. For script items: `parameters` can be overridden to customise script behaviour. |
 
 ## Catalog
@@ -144,7 +144,7 @@ Items are defined in `catalog.json`. There are two types:
   "displayName": "Show file extensions",
   "priority": 50,
   "script": {
-    "path": "scripts/tweak-show-extensions.ps1",
+    "path": "scripts/explorer-show-extensions.ps1",
     "parameters": {},
     "restartExplorer": true
   }
@@ -163,12 +163,12 @@ Test-Script.ps1      # Script validator (test your scripts)
 catalog.json         # App and script definitions
 modules/
   Catalog.ps1        # Load and query catalog.json
-  Common.ps1         # Logging, JSON I/O, prerequisite checks
+  Common.ps1         # Logging, JSON I/O, prerequisite checks, Explorer helpers
   Executor.ps1       # Run plan steps (winget installs, script dispatching)
   PlanState.ps1      # Build plan/state, resume menu, report
   ScriptRunner.ps1   # PowerShell script runner
-  TuiChecklist.ps1   # Interactive terminal checklist UI
-  Tweaks.ps1         # Explorer restart helpers
+  MainMenu.ps1       # Interactive terminal checklist UI
+  Tweaks.ps1         # Compatibility stub
 scripts/             # PowerShell scripts for catalog script items
 docs/                # Documentation
 setup-artifacts/     # Logs, plan.json, state.json (generated at runtime)
@@ -181,6 +181,13 @@ Requires [Pester](https://pester.dev) v5+.
 
 ```powershell
 .\Run-Tests.ps1
+```
+
+Validate JSON files against schemas:
+
+```powershell
+.\Validate-JsonSchema.ps1
+.\Validate-JsonSchema.ps1 -JsonPath .\catalog.json -SchemaPath .\catalog.schema.json
 ```
 
 ## License

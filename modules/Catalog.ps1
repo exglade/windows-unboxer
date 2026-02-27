@@ -52,7 +52,7 @@ function Import-Catalog {
 function Get-PreselectedIds {
     <#
     .SYNOPSIS
-        Returns the set of item IDs that should be pre-checked in the TUI
+        Returns the set of item IDs that should be pre-checked in the Main Menu
         based on DefaultSelectedCategories.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',

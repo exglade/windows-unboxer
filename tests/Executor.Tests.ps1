@@ -3,7 +3,6 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
-    . (Join-Path $PSScriptRoot '..\modules\Tweaks.ps1')
     . (Join-Path $PSScriptRoot '..\modules\ScriptRunner.ps1')
     . (Join-Path $PSScriptRoot '..\modules\PlanState.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Executor.ps1')
@@ -42,7 +41,7 @@ BeforeAll {
             id   = $Id
             type = 'script'
             script = [PSCustomObject]@{
-                path            = 'scripts/tweak-show-extensions.ps1'
+                path            = 'scripts/explorer-show-extensions.ps1'
                 parameters      = [PSCustomObject]@{}
                 restartExplorer = $false
             }

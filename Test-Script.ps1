@@ -22,9 +22,9 @@
     (e.g. registry writes) when testing on a real system.
 
 .EXAMPLE
-    .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1
-    .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1 -SkipRealRun
-    .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1 -Parameters @{ key = 'value' }
+    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1
+    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -SkipRealRun
+    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -Parameters @{ key = 'value' }
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
     Justification = 'CLI validation tool — requires coloured console output via Write-Host.')]

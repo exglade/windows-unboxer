@@ -1,10 +1,10 @@
 ﻿#requires -Version 5.1
-# TuiChecklist.Tests.ps1 - Unit tests for modules/TuiChecklist.ps1
+# MainMenu.Tests.ps1 - Unit tests for modules/MainMenu.ps1
 #
 # Focuses on the pure-logic helpers that do not interact with the console:
 #   - script:Limit-ScrollOffset
 #   - Layout constant values and the viewport-size arithmetic used inside
-#     Invoke-TuiChecklist
+#     Invoke-MainMenu
 
 BeforeAll {
     # Stub out every [Console] member referenced at module level or inside any
@@ -12,16 +12,16 @@ BeforeAll {
     # a headless test environment.
     Add-Type -TypeDefinition @'
 using System;
-namespace TuiTestStubs {
+namespace MainMenuTestStubs {
     public static class ConsoleStub {}
 }
 '@ -ErrorAction SilentlyContinue
 
-    . (Join-Path $PSScriptRoot '..\modules\TuiChecklist.ps1')
+    . (Join-Path $PSScriptRoot '..\\modules\\MainMenu.ps1')
 
     # ---------------------------------------------------------------------------
-    # Row-building helpers – reproduce the structure that Invoke-TuiChecklist
-    # builds so tests can construct realistic inputs without calling the full TUI.
+    # Row-building helpers – reproduce the structure that Invoke-MainMenu
+    # builds so tests can construct realistic inputs without calling the full Main Menu.
     # ---------------------------------------------------------------------------
 
     function script:New-HeaderRow {
@@ -61,7 +61,7 @@ namespace TuiTestStubs {
 # Layout constants
 # ===========================================================================
 
-Describe 'TuiChecklist layout constants' {
+Describe 'MainMenu layout constants' {
 
     It 'BANNER_HEIGHT is 5' {
         $script:BANNER_HEIGHT | Should -Be 5
@@ -90,7 +90,7 @@ Describe 'TuiChecklist layout constants' {
 # ===========================================================================
 
 Describe 'Viewport size arithmetic' {
-    # The formulas used inside Invoke-TuiChecklist:
+    # The formulas used inside Invoke-MainMenu:
     #   menuHeight   = windowHeight - BANNER_HEIGHT - FOOTER_HEIGHT
     #   viewportSize = menuHeight - 2
 
@@ -118,7 +118,7 @@ Describe 'Viewport size arithmetic' {
     }
 
     It 'menuTop equals BANNER_HEIGHT' {
-        # menuTop is hard-coded to $script:BANNER_HEIGHT inside Invoke-TuiChecklist
+        # menuTop is hard-coded to $script:BANNER_HEIGHT inside Invoke-MainMenu
         $script:BANNER_HEIGHT | Should -Be 5
     }
 

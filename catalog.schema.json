@@ -49,7 +49,7 @@
         },
         "category": {
           "type": "string",
-          "description": "Display category used for grouping in the TUI checklist."
+          "description": "Display category used for grouping in the Main Menu checklist."
         },
         "displayName": {
           "type": "string",
@@ -119,7 +119,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "description": "Relative path to the PowerShell script file (e.g. 'scripts/tweak-show-extensions.ps1')."
+          "description": "Relative path to the PowerShell script file (e.g. 'scripts/explorer-show-extensions.ps1')."
         },
         "parameters": {
           "type": "object",

@@ -93,7 +93,7 @@ If your script modifies Explorer-visible settings (e.g. registry tweaks for file
 ```json
 {
   "script": {
-    "path": "scripts/tweak-show-extensions.ps1",
+    "path": "scripts/explorer-show-extensions.ps1",
     "restartExplorer": true
   }
 }

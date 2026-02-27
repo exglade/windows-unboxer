@@ -24,7 +24,7 @@ BeforeAll {
       "displayName": "Show extensions",
       "priority": 50,
       "script": {
-        "path": "scripts/tweak-show-extensions.ps1",
+        "path": "scripts/explorer-show-extensions.ps1",
         "parameters": {},
         "restartExplorer": true
       },

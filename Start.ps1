@@ -20,11 +20,11 @@
 
 .PARAMETER ProfilePath
     Optional path to a profile JSON file.
-    Overrides which items are pre-checked in the TUI and can override 'scope' / 'override'
+    Overrides which items are pre-checked in the Main Menu and can override 'scope' / 'override'
     for individual app items. See profile.example.json for the file format.
 
 .PARAMETER Silent
-    Run without any user interaction. Skips the TUI checklist (uses pre-selected items
+    Run without any user interaction. Skips the Main Menu checklist (uses pre-selected items
     from the catalog or profile), auto-confirms the execution prompt, auto-handles
     resume choices, and auto-restarts Explorer when required by tweaks.
     Pair with -ProfilePath to drive the selection from a profile file.
@@ -74,9 +74,8 @@ if (-not $ScriptRoot) {
 $moduleFiles = @(
     'Common.ps1',
     'Catalog.ps1',
-    'TuiChecklist.ps1',
+    'MainMenu.ps1',
     'PlanState.ps1',
-    'Tweaks.ps1',
     'ScriptRunner.ps1',
     'Executor.ps1'
 )
@@ -279,10 +278,10 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
 Write-SetupLog 'Starting plan mode — showing checklist.'
 
 if ($Silent) {
-    Write-SetupLog 'Silent mode — skipping TUI checklist, using pre-selected items.'
+    Write-SetupLog 'Silent mode — skipping Main Menu checklist, using pre-selected items.'
     $selectedIds = @($preselectedIds | Where-Object { $_ })
 } else {
-    $selectedIds = Invoke-TuiChecklist -Items $catalogItems -PreselectedIds $preselectedIds `
+    $selectedIds = Invoke-MainMenu -Items $catalogItems -PreselectedIds $preselectedIds `
         -Title 'Windows 11 PC Setup — select items to install/configure'
 
     if ($null -eq $selectedIds) {
