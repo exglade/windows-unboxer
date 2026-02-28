@@ -243,7 +243,7 @@ function Invoke-Plan {
         All catalog items for lookup.
 
     .PARAMETER RunContext
-        Hashtable: Mode, TweakTarget, FailStepId, Paths, ...
+        Hashtable: Mode, FailStepId, Paths, ...
 
     .PARAMETER ResumeOption
         'ResumePending' | 'RerunFailed' | 'All'

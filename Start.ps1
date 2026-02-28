@@ -11,20 +11,16 @@
     Full execution flow with fake actions (no real winget or registry writes).
     Useful for testing resume behaviour and state transitions.
 
-.PARAMETER TweakTarget
-    'Real' (default) or 'Test'.
-    'Test' redirects registry writes to HKCU:\Software\KaiSetup\TestTweaks\...
-
 .PARAMETER FailStepId
     (Only with -Mock) Simulate a failure on the step with this ID.
 
 .PARAMETER ProfilePath
     Optional path to a profile JSON file.
-    Overrides which items are pre-checked in the TUI and can override 'scope' / 'override'
+    Overrides which items are pre-checked in the Main Menu and can override 'scope' / 'override'
     for individual app items. See profile.example.json for the file format.
 
 .PARAMETER Silent
-    Run without any user interaction. Skips the TUI checklist (uses pre-selected items
+    Run without any user interaction. Skips the Main Menu checklist (uses pre-selected items
     from the catalog or profile), auto-confirms the execution prompt, auto-handles
     resume choices, and auto-restarts Explorer when required by tweaks.
     Pair with -ProfilePath to drive the selection from a profile file.
@@ -33,7 +29,6 @@
     .\Setup.ps1                                          # Normal interactive run
     .\Setup.ps1 -DryRun                                  # Preview only
     .\Setup.ps1 -Mock                                    # Fake execution
-    .\Setup.ps1 -Mock -TweakTarget Test                  # Fake + safe registry
     .\Setup.ps1 -Mock -FailStepId dev.vscode             # Simulate failure on VS Code step
     .\Setup.ps1 -ProfilePath .\profile.example.json      # Load a profile
     .\Setup.ps1 -Silent                                  # No-prompt run with default selection
@@ -46,9 +41,6 @@ param(
     [switch]$DryRun,
 
     [switch]$Mock,
-
-    [ValidateSet('Real', 'Test')]
-    [string]$TweakTarget = 'Real',
 
     [string]$FailStepId = $null,
 
@@ -74,9 +66,8 @@ if (-not $ScriptRoot) {
 $moduleFiles = @(
     'Common.ps1',
     'Catalog.ps1',
-    'TuiChecklist.ps1',
+    'MainMenu.ps1',
     'PlanState.ps1',
-    'Tweaks.ps1',
     'ScriptRunner.ps1',
     'Executor.ps1'
 )
@@ -97,21 +88,13 @@ $mode = 'Real'
 if ($DryRun)  { $mode = 'DryRun' }
 elseif ($Mock){ $mode = 'Mock'   }
 
-# In Mock mode, warn if TweakTarget is Real (discourage accidental registry writes)
-if ($mode -eq 'Mock' -and $TweakTarget -eq 'Real') {
-    Write-Warning "Running in Mock mode with TweakTarget=Real. Registry tweaks will be simulated (no writes). Consider -TweakTarget Test."
-    # In Mock mode, auto-redirect to Test to keep machine clean
-    $TweakTarget = 'Test'
-}
-
 $Paths = Get-ArtifactPaths -RootDir $ScriptRoot
 
 $RunContext = @{
-    Mode        = $mode
-    TweakTarget = $TweakTarget
-    FailStepId  = $FailStepId
-    Paths       = $Paths
-    Silent      = $Silent.IsPresent
+    Mode       = $mode
+    FailStepId = $FailStepId
+    Paths      = $Paths
+    Silent     = $Silent.IsPresent
 }
 
 # ---------------------------------------------------------------------------
@@ -121,7 +104,7 @@ Initialize-ArtifactDirectories -Paths $Paths
 Initialize-Log -LogDir $Paths.Logs
 
 Write-SetupLog "=== PC Setup starting ==="
-Write-SetupLog "Mode=$mode  TweakTarget=$TweakTarget  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
+Write-SetupLog "Mode=$mode  Silent=$($Silent.IsPresent)  FailStepId=$(if($FailStepId) { $FailStepId } else { '<none>' })  ProfilePath=$(if($ProfilePath) { $ProfilePath } else { '<none>' })"
 
 # Mode banner
 switch ($mode) {
@@ -165,6 +148,9 @@ if ($ProfilePath) {
     if ($profileHasSelectedIds) {
         $preselectedIds = @($profileData.selectedIds)
         Write-SetupLog "Profile pre-selection ($($preselectedIds.Count) item(s)): $($preselectedIds -join ', ')"
+    } else {
+        $preselectedIds = @()
+        Write-SetupLog 'Profile loaded without selectedIds — no items pre-selected.'
     }
 }
 
@@ -279,10 +265,10 @@ if ((Test-Path $Paths.State) -and (Test-Path $Paths.Plan)) {
 Write-SetupLog 'Starting plan mode — showing checklist.'
 
 if ($Silent) {
-    Write-SetupLog 'Silent mode — skipping TUI checklist, using pre-selected items.'
+    Write-SetupLog 'Silent mode — skipping Main Menu checklist, using pre-selected items.'
     $selectedIds = @($preselectedIds | Where-Object { $_ })
 } else {
-    $selectedIds = Invoke-TuiChecklist -Items $catalogItems -PreselectedIds $preselectedIds `
+    $selectedIds = Invoke-MainMenu -Items $catalogItems -PreselectedIds $preselectedIds `
         -Title 'Windows 11 PC Setup — select items to install/configure'
 
     if ($null -eq $selectedIds) {

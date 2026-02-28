@@ -22,9 +22,9 @@
     (e.g. registry writes) when testing on a real system.
 
 .EXAMPLE
-    .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1
-    .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1 -SkipRealRun
-    .\Test-Script.ps1 -ScriptPath .\scripts\tweak-show-extensions.ps1 -Parameters @{ key = 'value' }
+    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1
+    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -SkipRealRun
+    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -Parameters @{ key = 'value' }
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
     Justification = 'CLI validation tool — requires coloured console output via Write-Host.')]
@@ -131,10 +131,9 @@ try {
         }
     }
     $ctx = @{
-        Mode        = 'DryRun'
-        TweakTarget = 'Test'
-        FailStepId  = $null
-        Paths       = @{ Root = (Split-Path $resolvedPath -Parent) }
+        Mode       = 'DryRun'
+        FailStepId = $null
+        Paths      = @{ Root = (Split-Path $resolvedPath -Parent) }
     }
     # Override the script path to be just the filename since Root is the parent dir
     $mockItem.script.path = (Split-Path $resolvedPath -Leaf)
@@ -163,10 +162,9 @@ if (-not $SkipRealRun) {
             }
         }
         $ctx = @{
-            Mode        = 'Real'
-            TweakTarget = 'Test'
-            FailStepId  = $null
-            Paths       = @{ Root = (Split-Path $resolvedPath -Parent) }
+            Mode       = 'Real'
+            FailStepId = $null
+            Paths      = @{ Root = (Split-Path $resolvedPath -Parent) }
         }
         $result = Invoke-ScriptStep -CatalogItem $mockItem -RunContext $ctx
         $realRunPassed = $result.Success -eq $true

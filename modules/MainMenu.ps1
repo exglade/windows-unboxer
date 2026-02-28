@@ -1,5 +1,5 @@
 ﻿#requires -Version 5.1
-# TuiChecklist.ps1 - Keyboard-only interactive checklist TUI
+# MainMenu.ps1 - Keyboard-only interactive checklist TUI
 
 Set-StrictMode -Version Latest
 
@@ -18,7 +18,7 @@ $script:MIN_WINDOW_HEIGHT = $script:BANNER_HEIGHT + $script:MENU_MIN_HEIGHT + $s
 
 function script:Show-Banner {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-        Justification = 'TUI rendering requires direct console output via Write-Host.')]
+        Justification = 'Main Menu rendering requires direct console output via Write-Host.')]
     param(
         [string] $Title,
         [int]    $MaxWidth
@@ -51,7 +51,7 @@ function script:Show-Banner {
 
 function script:Show-Footer {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-        Justification = 'TUI rendering requires direct console output via Write-Host.')]
+        Justification = 'Main Menu rendering requires direct console output via Write-Host.')]
     param(
         [int] $FooterTop,
         [int] $MaxWidth
@@ -97,7 +97,7 @@ function script:Limit-ScrollOffset {
 
 function script:Show-Checklist {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-        Justification = 'TUI rendering requires direct console output via Write-Host.')]
+        Justification = 'Main Menu rendering requires direct console output via Write-Host.')]
     param(
         [array] $Rows,
         [array] $ItemIndices,
@@ -184,7 +184,7 @@ function script:Show-Checklist {
 # Public function
 # ---------------------------------------------------------------------------
 
-function Invoke-TuiChecklist {
+function Invoke-MainMenu {
     <#
     .SYNOPSIS
         Shows an interactive keyboard checklist grouped by category.
@@ -197,7 +197,7 @@ function Invoke-TuiChecklist {
         Heading shown above the list.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-        Justification = 'TUI rendering requires direct console output via Write-Host.')]
+        Justification = 'Main Menu rendering requires direct console output via Write-Host.')]
     param(
         [Parameter(Mandatory)]
         [array]$Items,

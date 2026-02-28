@@ -3,9 +3,6 @@
 
 Set-StrictMode -Version Latest
 
-# Categories that are pre-checked by default
-$script:DefaultSelectedCategories = @('Core', 'Dev', 'Tweaks')
-
 function Import-Catalog {
     <#
     .SYNOPSIS
@@ -52,8 +49,8 @@ function Import-Catalog {
 function Get-PreselectedIds {
     <#
     .SYNOPSIS
-        Returns the set of item IDs that should be pre-checked in the TUI
-        based on DefaultSelectedCategories.
+        Returns the set of item IDs that should be pre-checked in the Main Menu.
+        By default, all catalog items are pre-checked.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
         Justification = 'Returns a collection of IDs — plural noun is semantically correct.')]
@@ -63,9 +60,7 @@ function Get-PreselectedIds {
         [array]$Items
     )
 
-    $ids = $Items |
-        Where-Object { $script:DefaultSelectedCategories -contains $_.category } |
-        ForEach-Object { $_.id }
+    $ids = $Items | ForEach-Object { $_.id }
 
     return @($ids)
 }

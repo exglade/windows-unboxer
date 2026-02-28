@@ -3,7 +3,6 @@
 
 BeforeAll {
     . (Join-Path $PSScriptRoot '..\modules\Common.ps1')
-    . (Join-Path $PSScriptRoot '..\modules\Tweaks.ps1')
     . (Join-Path $PSScriptRoot '..\modules\ScriptRunner.ps1')
     . (Join-Path $PSScriptRoot '..\modules\PlanState.ps1')
     . (Join-Path $PSScriptRoot '..\modules\Executor.ps1')
@@ -42,7 +41,7 @@ BeforeAll {
             id   = $Id
             type = 'script'
             script = [PSCustomObject]@{
-                path            = 'scripts/tweak-show-extensions.ps1'
+                path            = 'scripts/explorer-show-extensions.ps1'
                 parameters      = [PSCustomObject]@{}
                 restartExplorer = $false
             }
@@ -73,15 +72,13 @@ BeforeAll {
 
     function script:New-Ctx {
         param(
-            [string]$Mode        = 'DryRun',
-            [string]$TweakTarget = 'Test',
-            [string]$FailStepId  = $null
+            [string]$Mode       = 'DryRun',
+            [string]$FailStepId = $null
         )
         @{
-            Mode        = $Mode
-            TweakTarget = $TweakTarget
-            FailStepId  = $FailStepId
-            Paths       = (script:New-TestPaths)
+            Mode       = $Mode
+            FailStepId = $FailStepId
+            Paths      = (script:New-TestPaths)
         }
     }
 
@@ -374,10 +371,9 @@ Describe 'Invoke-Plan - DryRun full run' {
         $state = New-State -Plan $plan
 
         $ctx = @{
-            Mode        = 'DryRun'
-            TweakTarget = 'Real'
-            FailStepId  = $null
-            Paths       = (script:New-TestPaths)
+            Mode       = 'DryRun'
+            FailStepId = $null
+            Paths      = (script:New-TestPaths)
         }
 
         Write-JsonAtomic -Path $ctx.Paths.State -InputObject $state
@@ -436,10 +432,9 @@ Describe 'Invoke-Plan - Mock mode stop-on-failure' {
         $state = New-State -Plan $plan
 
         $ctx = @{
-            Mode        = 'Mock'
-            TweakTarget = 'Test'
-            FailStepId  = 'dev.vscode'   # second step fails
-            Paths       = (script:New-TestPaths)
+            Mode       = 'Mock'
+            FailStepId = 'dev.vscode'   # second step fails
+            Paths      = (script:New-TestPaths)
         }
 
         Write-JsonAtomic -Path $ctx.Paths.State -InputObject $state
@@ -498,10 +493,9 @@ Describe 'Invoke-Plan - ResumePending skips already-Succeeded steps' {
             -StartedAt (Get-Date -Format 'o') -EndedAt (Get-Date -Format 'o')
 
         $ctx = @{
-            Mode        = 'DryRun'
-            TweakTarget = 'Real'
-            FailStepId  = $null
-            Paths       = (script:New-TestPaths)
+            Mode       = 'DryRun'
+            FailStepId = $null
+            Paths      = (script:New-TestPaths)
         }
 
         Write-JsonAtomic -Path $ctx.Paths.State -InputObject $state

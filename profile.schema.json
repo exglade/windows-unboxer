@@ -11,7 +11,7 @@
     },
     "selectedIds": {
       "type": "array",
-      "description": "IDs of items to pre-check in the TUI checklist. Replaces the default category-based pre-selection. The user can still toggle items before confirming.",
+      "description": "IDs of items to pre-check in the Main Menu checklist. Replaces the default category-based pre-selection. The user can still toggle items before confirming.",
       "items": {
         "type": "string",
         "pattern": "^[a-z0-9]+\\.[a-z0-9]+$",
