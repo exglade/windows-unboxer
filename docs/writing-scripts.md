@@ -14,7 +14,7 @@ param(
 ```
 
 | Parameter | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `$Parameters` | `hashtable` | Key/value pairs from the catalog `script.parameters` (merged with any profile overrides). |
 | `$DryRun` | `switch` | When present, the script must **not** make any changes. Log what _would_ happen instead. |
 
@@ -120,7 +120,7 @@ Add your script to `catalog.json`:
 ```
 
 | Field | Required | Description |
-|---|---|---|
+| --- | --- | --- |
 | `path` | Yes | Relative path to the `.ps1` file from the project root. |
 | `parameters` | No | Default parameters passed to the script. |
 | `restartExplorer` | No | Set `true` if the script changes Explorer settings. Defaults to `false`. |
