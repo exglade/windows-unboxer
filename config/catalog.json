@@ -142,6 +142,51 @@
       "requiresReboot": false
     },
     {
+      "id": "dev.ohmyposhsetup",
+      "type": "script",
+      "category": "Dev",
+      "displayName": "Setup Oh My Posh profile",
+      "priority": 331,
+      "script": {
+        "path": "scripts/setup-oh-my-posh.ps1",
+        "parameters": {
+          "fontName": "Meslo"
+        },
+        "restartExplorer": false
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "dev.terminalfont",
+      "type": "script",
+      "category": "Dev",
+      "displayName": "Set Windows Terminal font (Meslo)",
+      "priority": 332,
+      "script": {
+        "path": "scripts/terminal-set-meslo-font.ps1",
+        "parameters": {
+          "fontFace": "MesloLGM Nerd Font"
+        },
+        "restartExplorer": false
+      },
+      "requiresReboot": false
+    },
+    {
+      "id": "dev.vscodeterminalfont",
+      "type": "script",
+      "category": "Dev",
+      "displayName": "Set VS Code terminal font (Meslo)",
+      "priority": 333,
+      "script": {
+        "path": "scripts/vscode-set-terminal-meslo-font.ps1",
+        "parameters": {
+          "fontFamily": "MesloLGM Nerd Font"
+        },
+        "restartExplorer": false
+      },
+      "requiresReboot": false
+    },
+    {
       "id": "productivity.foxit",
       "type": "app",
       "category": "Productivity",
