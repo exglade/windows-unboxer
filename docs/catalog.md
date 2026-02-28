@@ -1,4 +1,4 @@
-# Catalog Schema Guide
+# Catalog Guide
 
 This guide explains `config/catalog.schema.json` and how to write your own `config/catalog.json`.
 

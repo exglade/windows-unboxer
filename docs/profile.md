@@ -1,4 +1,4 @@
-# Profile Schema Guide
+# Profile Guide
 
 This guide explains `config/profile.schema.json` and how to write your own profile file.
 
@@ -68,7 +68,7 @@ Rules:
 
 ## Common Patterns
 
-### 1) Work laptop profile
+### 1. Work laptop profile
 
 ```json
 {
@@ -80,7 +80,7 @@ Rules:
 }
 ```
 
-### 2) Personal machine profile
+### 2. Personal machine profile
 
 ```json
 {
@@ -89,7 +89,7 @@ Rules:
 }
 ```
 
-### 3) Script parameter override
+### 3. Script parameter override
 
 ```json
 {

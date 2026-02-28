@@ -25,7 +25,7 @@ Use custom scripts when you need extra setup logic, such as:
 - post-install configuration
 
 Author script contract and behavior: [writing-scripts.md](writing-scripts.md)  
-Wire script into catalog: [catalog.md](catalog.md)
+Add script into catalog: [catalog.md](catalog.md)
 
 ### 3. Create deployment presets with profiles
 
@@ -34,16 +34,12 @@ Use profiles when you want different presets for different machines (for example
 - Select a predefined subset of catalog items
 - Override app scope/arguments or script parameters per item
 
-How to run profiles: [README.md](../README.md#profiles)  
+How to run profiles: [README.md](../README.md#quick-start)  
 How to write profile files: [profile.md](profile.md)
 
 ### 4. Development testing with `-Mock` and `-FailStepId`
 
-Use testing flags when validating plan/state behavior, failure handling, and resume flow.
-
-#### Testing Flags (`-Mock`, `-FailStepId`)
-
-Use these flags for testing and troubleshooting flows:
+Use testing flags when validating plan/state behavior, failure handling, and resume flow:
 
 ```powershell
 .\Start.ps1 -Mock
