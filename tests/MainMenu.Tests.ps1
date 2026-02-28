@@ -63,8 +63,8 @@ namespace MainMenuTestStubs {
 
 Describe 'MainMenu layout constants' {
 
-    It 'BANNER_HEIGHT is 5' {
-        $script:BANNER_HEIGHT | Should -Be 5
+    It 'BANNER_HEIGHT is 6' {
+        $script:BANNER_HEIGHT | Should -Be 6
     }
 
     It 'MENU_MIN_HEIGHT is 5' {
@@ -80,8 +80,8 @@ Describe 'MainMenu layout constants' {
         $script:MIN_WINDOW_HEIGHT | Should -Be $expected
     }
 
-    It 'MIN_WINDOW_HEIGHT is 13' {
-        $script:MIN_WINDOW_HEIGHT | Should -Be 13
+    It 'MIN_WINDOW_HEIGHT is 14' {
+        $script:MIN_WINDOW_HEIGHT | Should -Be 14
     }
 }
 
@@ -119,7 +119,7 @@ Describe 'Viewport size arithmetic' {
 
     It 'menuTop equals BANNER_HEIGHT' {
         # menuTop is hard-coded to $script:BANNER_HEIGHT inside Invoke-MainMenu
-        $script:BANNER_HEIGHT | Should -Be 5
+        $script:BANNER_HEIGHT | Should -Be 6
     }
 
     It 'footerTop equals menuTop + menuHeight' {

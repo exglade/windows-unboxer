@@ -268,8 +268,7 @@ if ($Silent) {
     Write-SetupLog 'Silent mode — skipping Main Menu checklist, using pre-selected items.'
     $selectedIds = @($preselectedIds | Where-Object { $_ })
 } else {
-    $selectedIds = Invoke-MainMenu -Items $catalogItems -PreselectedIds $preselectedIds `
-        -Title 'Windows 11 PC Setup — select items to install/configure'
+    $selectedIds = Invoke-MainMenu -Items $catalogItems -PreselectedIds $preselectedIds
 
     if ($null -eq $selectedIds) {
         Write-SetupLog 'User cancelled checklist (ESC).'

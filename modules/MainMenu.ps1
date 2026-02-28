@@ -7,10 +7,10 @@ Set-StrictMode -Version Latest
 # Layout constants
 # ---------------------------------------------------------------------------
 
-$script:BANNER_HEIGHT    = 5   # rows 0-4
+$script:BANNER_HEIGHT    = 6   # rows 0-5
 $script:MENU_MIN_HEIGHT  = 5   # minimum rows for the scrollable menu zone
 $script:FOOTER_HEIGHT    = 3   # rows below menu
-$script:MIN_WINDOW_HEIGHT = $script:BANNER_HEIGHT + $script:MENU_MIN_HEIGHT + $script:FOOTER_HEIGHT  # 13
+$script:MIN_WINDOW_HEIGHT = $script:BANNER_HEIGHT + $script:MENU_MIN_HEIGHT + $script:FOOTER_HEIGHT  # 14
 
 # ---------------------------------------------------------------------------
 # Internal rendering helpers
@@ -20,31 +20,61 @@ function script:Show-Banner {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
         Justification = 'Main Menu rendering requires direct console output via Write-Host.')]
     param(
-        [string] $Title,
         [int]    $MaxWidth
     )
-    # 5 lines: blank / title / blank / rule / blank
+    # 6 lines: compact block logo + separator rule
     [Console]::CursorVisible = $false
     $origFg = [Console]::ForegroundColor
+    $singleToneColor = [ConsoleColor]::Gray
+    $unColor = [ConsoleColor]::DarkGray
+    $boxerColor = [ConsoleColor]::Gray
+    $useSplitColor = $true
+    $splitAt = 18
 
-    [Console]::SetCursorPosition(0, 0)
-    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 0 blank
+    $logoLines = @(
+        '██    ██ ███    ██ ██████   ██████  ██   ██ ███████ ██████',
+        '██    ██ ████   ██ ██   ██ ██    ██  ██ ██  ██      ██   ██',
+        '██    ██ ██ ██  ██ ██████  ██    ██   ███   █████   ██████',
+        '██    ██ ██  ██ ██ ██   ██ ██    ██  ██ ██  ██      ██   ██',
+        ' ██████  ██   ████ ██████   ██████  ██   ██ ███████ ██   ██'
+    )
 
-    [Console]::SetCursorPosition(0, 1)
-    [Console]::ForegroundColor = [ConsoleColor]::White
-    Write-Host "  $Title".PadRight($MaxWidth) -NoNewline                   # row 1 title
+    for ($row = 0; $row -lt $logoLines.Count; $row++) {
+        [Console]::SetCursorPosition(0, $row)
+        $line = $logoLines[$row]
 
-    [Console]::SetCursorPosition(0, 2)
-    [Console]::ForegroundColor = $origFg
-    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 2 blank
+        if ($useSplitColor) {
+            $renderWidth = [Math]::Min($line.Length, $MaxWidth)
+            $leftWidth = [Math]::Min($splitAt, $renderWidth)
+            $rightWidth = [Math]::Max(0, $renderWidth - $leftWidth)
 
-    [Console]::SetCursorPosition(0, 3)
+            if ($leftWidth -gt 0) {
+                [Console]::ForegroundColor = $unColor
+                Write-Host $line.Substring(0, $leftWidth) -NoNewline
+            }
+
+            if ($rightWidth -gt 0) {
+                [Console]::ForegroundColor = $boxerColor
+                Write-Host $line.Substring($leftWidth, $rightWidth) -NoNewline
+            }
+
+            if ($renderWidth -lt $MaxWidth) {
+                [Console]::ForegroundColor = $origFg
+                Write-Host ''.PadRight($MaxWidth - $renderWidth) -NoNewline
+            }
+        } else {
+            [Console]::ForegroundColor = $singleToneColor
+            if ($line.Length -gt $MaxWidth) {
+                Write-Host $line.Substring(0, $MaxWidth) -NoNewline
+            } else {
+                Write-Host $line.PadRight($MaxWidth) -NoNewline
+            }
+        }
+    }
+
+    [Console]::SetCursorPosition(0, $script:BANNER_HEIGHT - 1)
     [Console]::ForegroundColor = [ConsoleColor]::DarkGray
-    Write-Host ("  " + ([string][char]0x2500) * [Math]::Max(0, $MaxWidth - 4)).PadRight($MaxWidth) -NoNewline  # row 3 rule
-
-    [Console]::SetCursorPosition(0, 4)
-    [Console]::ForegroundColor = $origFg
-    Write-Host ''.PadRight($MaxWidth) -NoNewline                           # row 4 blank
+    Write-Host ("  " + ([string][char]0x2500) * [Math]::Max(0, $MaxWidth - 4)).PadRight($MaxWidth) -NoNewline
 
     [Console]::ForegroundColor = $origFg
 }
@@ -193,8 +223,6 @@ function Invoke-MainMenu {
         Sorted catalog items (PSCustomObjects with id, category, displayName).
     .PARAMETER PreselectedIds
         Array of IDs to pre-check.
-    .PARAMETER Title
-        Heading shown above the list.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
         Justification = 'Main Menu rendering requires direct console output via Write-Host.')]
@@ -202,9 +230,7 @@ function Invoke-MainMenu {
         [Parameter(Mandatory)]
         [array]$Items,
 
-        [array]$PreselectedIds = @(),
-
-        [string]$Title = 'Select items to install/configure'
+        [array]$PreselectedIds = @()
     )
 
     if ($Items.Count -eq 0) {
@@ -259,7 +285,7 @@ function Invoke-MainMenu {
     # --- Static render (banner + footer rendered once) ---
     try {
         Clear-Host
-        Show-Banner -Title $Title -MaxWidth $maxWidth
+        Show-Banner -MaxWidth $maxWidth
         Show-Footer -FooterTop $footerTop -MaxWidth $maxWidth
 
         # --- Initial menu render ---
