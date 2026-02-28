@@ -1,12 +1,12 @@
 # Catalog Schema Guide
 
-This guide explains `catalog.schema.json` and how to write your own `catalog.json`.
+This guide explains `config/catalog.schema.json` and how to write your own `config/catalog.json`.
 
 Use this when you want to customize what gets installed or executed.
 
 ## Purpose
 
-`catalog.json` defines the deployment plan:
+`config/catalog.json` defines the deployment plan:
 
 - app items (installed with winget)
 - script items (run through the script runner)
@@ -111,7 +111,7 @@ For script authoring contract (`-Parameters`, `-DryRun`), see [writing-scripts.m
 
 Suggested workflow:
 
-1. Copy [catalog.json](../catalog.json) as a baseline.
+1. Copy [catalog.json](../config/catalog.json) as a baseline.
 2. Add or remove item entries.
 3. Keep each `id` unique and in `category.name` format.
 4. Set `priority` to control order (lower runs earlier).
@@ -122,4 +122,4 @@ Suggested workflow:
 
 - Add `"$schema": "./catalog.schema.json"` for editor validation/autocomplete.
 - Keep profile overrides aligned with item IDs defined in your catalog.
-- If you add script items, validate script behavior with `./Test-Script.ps1`.
+- If you add script items, validate script behavior with `./tools/Test-Script.ps1`.

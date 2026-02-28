@@ -4,7 +4,7 @@ An interactive automated Windows PC setup with PowerShell.
 
 Installs apps via **winget** and runs **PowerShell scripts** for configuration — using a keyboard-navigable terminal UI. Runs can be interrupted and resumed; a full report is shown at the end.
 
-Feel free to fork this and modify the `catalog.json` for your own usage.
+Feel free to fork this and modify `config/catalog.json` for your own usage.
 
 ## Backstory
 
@@ -84,11 +84,13 @@ Use `↑`/`↓` to navigate, `Space` to toggle items, `Enter` to confirm.
 ```powershell
 .\Start.ps1
 .\Start.ps1 -Silent
-.\Start.ps1 -Silent -ProfilePath .\profile.example.json
+.\Start.ps1 -Silent -ProfilePath .\config\profile.example.json
 .\Start.ps1 -DryRun
 ```
 
-All catalog items are pre-checked by default. When `-ProfilePath` is used, preselection comes from profile `selectedIds` (or none if omitted). Lower `priority` values in `catalog.json` run first.
+All catalog items are pre-checked by default. When `-ProfilePath` is used, preselection comes from profile `selectedIds` (or none if omitted). Lower `priority` values in `config/catalog.json` run first.
+
+Schemas are located in `config/catalog.schema.json` and `config/profile.schema.json`.
 
 If a run is interrupted, re-running `Start.ps1` detects the saved state and offers to **resume pending steps**, **re-run failed steps**, **start over**, or **view the last report**.
 
@@ -97,32 +99,45 @@ See [advanced-usage.md](/docs/advanced-usage.md) for instructions on more ways t
 ## Project Structure
 
 ```text
-Start.ps1            # Entry point and orchestrator
-Test-Script.ps1      # Script validator (test your scripts)
-catalog.json         # App and script definitions
-modules/
-  Catalog.ps1        # Load and query catalog.json
-  Common.ps1         # Logging, JSON I/O, prerequisite checks, Explorer helpers
-  Executor.ps1       # Run plan steps (winget installs, script dispatching)
-  PlanState.ps1      # Build plan/state, resume menu, report
-  ScriptRunner.ps1   # PowerShell script runner
-  MainMenu.ps1       # Interactive main menu terminal UI
-docs/
-   advanced-usage.md  # Advanced scenarios and testing flags
-   profile-schema.md  # Profile schema reference and authoring guide
-   catalog-schema.md  # Catalog schema reference and authoring guide
-   writing-scripts.md # Script runner contract and script authoring guide
-scripts/             # PowerShell scripts for catalog script items
-setup-artifacts/     # Logs, plan.json, state.json (generated at runtime)
-tests/               # Pester unit tests
+Start.ps1              # Entry point
+config/                # Runtime configuration files
+  catalog.json         # App and script definitions
+  catalog.schema.json  # Catalog schema
+  profile.example.json # Sample profile preset
+  profile.schema.json  # Profile schema
+modules/               # PowerShell modules
+  Catalog.ps1          # Load and query config/catalog.json
+  Common.ps1           # Logging, JSON I/O, prerequisite checks, Explorer helpers
+  Executor.ps1         # Run plan steps (winget installs, script dispatching)
+  PlanState.ps1        # Build plan/state, resume menu, report
+  ScriptRunner.ps1     # PowerShell script runner
+  MainMenu.ps1         # Interactive main menu terminal UI
+docs/                  # Documentation
+scripts/               # PowerShell scripts for catalog script items
+setup-artifacts/       # Logs, plan.json, state.json (generated at runtime)
+tests/                 # Pester unit tests
+tools/                 # Utility scripts
+  Run-Tests.ps1        # Run Pester test suite
+  Test-Script.ps1      # Script contract validator
 ```
 
-## Testing
+## Feedback and Contributions
 
-Requires [Pester](https://pester.dev) v5+.
+Please feel free to submit a [GitHub Issue](https://github.com/exglade/windows-unboxer/issues) for bug reports, ideas, and questions.
+
+If you want a change, please open an issue with:
+
+- What you are trying to do
+- What happened vs what you expected
+- Reproduction steps or logs (if available)
+
+For code changes in this repository, run:
 
 ```powershell
-.\Run-Tests.ps1
+Invoke-ScriptAnalyzer -Path . -Recurse
+
+# Requires [Pester](https://pester.dev) v5+.
+.\tools\Run-Tests.ps1
 ```
 
 ## License

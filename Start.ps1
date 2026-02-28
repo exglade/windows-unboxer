@@ -17,7 +17,7 @@
 .PARAMETER ProfilePath
     Optional path to a profile JSON file.
     Overrides which items are pre-checked in the Main Menu and can override 'scope' / 'override'
-    for individual app items. See profile.example.json for the file format.
+    for individual app items. See config\profile.example.json for the file format.
 
 .PARAMETER Silent
     Run without any user interaction. Skips the Main Menu checklist (uses pre-selected items
@@ -30,9 +30,9 @@
     .\Setup.ps1 -DryRun                                  # Preview only
     .\Setup.ps1 -Mock                                    # Fake execution
     .\Setup.ps1 -Mock -FailStepId dev.vscode             # Simulate failure on VS Code step
-    .\Setup.ps1 -ProfilePath .\profile.example.json      # Load a profile
+    .\Setup.ps1 -ProfilePath .\config\profile.example.json      # Load a profile
     .\Setup.ps1 -Silent                                  # No-prompt run with default selection
-    .\Setup.ps1 -Silent -ProfilePath .\profile.example.json  # No-prompt run with profile
+    .\Setup.ps1 -Silent -ProfilePath .\config\profile.example.json  # No-prompt run with profile
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
     Justification = 'CLI setup tool — requires coloured console output via Write-Host.')]

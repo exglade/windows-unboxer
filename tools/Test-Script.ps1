@@ -22,9 +22,9 @@
     (e.g. registry writes) when testing on a real system.
 
 .EXAMPLE
-    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1
-    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -SkipRealRun
-    .\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -Parameters @{ key = 'value' }
+    .\tools\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1
+    .\tools\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -SkipRealRun
+    .\tools\Test-Script.ps1 -ScriptPath .\scripts\explorer-show-extensions.ps1 -Parameters @{ key = 'value' }
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
     Justification = 'CLI validation tool — requires coloured console output via Write-Host.')]
@@ -48,8 +48,9 @@ $ScriptRoot = $PSScriptRoot
 if (-not $ScriptRoot) {
     $ScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 }
-. (Join-Path $ScriptRoot 'modules\Common.ps1')
-. (Join-Path $ScriptRoot 'modules\ScriptRunner.ps1')
+$RepoRoot = Split-Path $ScriptRoot -Parent
+. (Join-Path $RepoRoot 'modules\Common.ps1')
+. (Join-Path $RepoRoot 'modules\ScriptRunner.ps1')
 
 # Suppress log file creation
 $script:LogFile = $null

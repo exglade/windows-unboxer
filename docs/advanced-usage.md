@@ -8,7 +8,7 @@ If you only want a normal setup run, follow [README.md](../README.md) and use `.
 
 ### 1. Customize app and script list
 
-Use a custom `catalog.json` when you want to control which apps and scripts are deployed.
+Use a custom `config/catalog.json` when you want to control which apps and scripts are deployed.
 
 - Add/remove app items
 - Add/remove script items

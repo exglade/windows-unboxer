@@ -42,7 +42,7 @@ if ($DryRun) {
 }
 ```
 
-The runner relies on DryRun for safe previews and for the `Test-Script.ps1` validator.
+The runner relies on DryRun for safe previews and for the `tools/Test-Script.ps1` validator.
 
 ## Using Parameters
 
@@ -101,7 +101,7 @@ If your script modifies Explorer-visible settings (e.g. registry tweaks for file
 
 ## Catalog Entry
 
-Add your script to `catalog.json`:
+Add your script to `config/catalog.json`:
 
 ```json
 {
@@ -130,7 +130,7 @@ Add your script to `catalog.json`:
 Use the built-in script validator:
 
 ```powershell
-.\Test-Script.ps1 -ScriptPath .\scripts\my-script.ps1
+.\tools\Test-Script.ps1 -ScriptPath .\scripts\my-script.ps1
 ```
 
 The validator checks:
@@ -143,13 +143,13 @@ The validator checks:
 Add `-SkipRealRun` to skip the real execution test (useful when the script has system-wide side-effects):
 
 ```powershell
-.\Test-Script.ps1 -ScriptPath .\scripts\my-script.ps1 -SkipRealRun
+.\tools\Test-Script.ps1 -ScriptPath .\scripts\my-script.ps1 -SkipRealRun
 ```
 
 Pass custom parameters:
 
 ```powershell
-.\Test-Script.ps1 -ScriptPath .\scripts\my-script.ps1 -Parameters @{ fontName = 'CascadiaCode' }
+.\tools\Test-Script.ps1 -ScriptPath .\scripts\my-script.ps1 -Parameters @{ fontName = 'CascadiaCode' }
 ```
 
 ## Example: Registry Tweak Script

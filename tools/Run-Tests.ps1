@@ -12,15 +12,15 @@
     Return the Pester result object (useful for CI pipelines).
 
 .EXAMPLE
-    .\Run-Tests.ps1
-    .\Run-Tests.ps1 -Output Detailed
-    .\Run-Tests.ps1 -TestPath .\tests\Common.Tests.ps1
+    .\tools\Run-Tests.ps1
+    .\tools\Run-Tests.ps1 -Output Detailed
+    .\tools\Run-Tests.ps1 -TestPath .\tests\Common.Tests.ps1
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
     Justification = 'Test runner — requires coloured console output via Write-Host.')]
 [CmdletBinding()]
 param(
-    [string]$TestPath = (Join-Path $PSScriptRoot 'tests'),
+    [string]$TestPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'tests'),
 
     [ValidateSet('Normal', 'Detailed', 'Diagnostic', 'Minimal', 'None')]
     [string]$Output = 'Normal',
@@ -56,7 +56,7 @@ $cfg.Run.PassThru         = $true           # always capture result internally
 # Show code coverage summary in Detailed mode
 if ($Output -eq 'Detailed' -or $Output -eq 'Diagnostic') {
     $cfg.CodeCoverage.Enabled = $true
-    $cfg.CodeCoverage.Path    = (Join-Path $PSScriptRoot 'modules\*.ps1')
+    $cfg.CodeCoverage.Path    = (Join-Path (Split-Path $PSScriptRoot -Parent) 'modules\*.ps1')
 }
 
 Write-Host ''

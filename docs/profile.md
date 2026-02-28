@@ -1,6 +1,6 @@
 # Profile Schema Guide
 
-This guide explains `profile.schema.json` and how to write your own profile file.
+This guide explains `config/profile.schema.json` and how to write your own profile file.
 
 For run commands and when to use profiles, see [README.md](../README.md#profiles).
 
@@ -50,7 +50,7 @@ Use profiles when you want reusable presets for different machine types.
 
 ## `overrides`
 
-Each key under `overrides` is an item ID from `catalog.json`.
+Each key under `overrides` is an item ID from `config/catalog.json`.
 
 Supported override fields:
 
@@ -106,6 +106,6 @@ Rules:
 
 ## Validation Tips
 
-- Start from [profile.example.json](../profile.example.json).
-- Keep IDs in sync with [catalog.json](../catalog.json).
+- Start from [profile.example.json](../config/profile.example.json).
+- Keep IDs in sync with [catalog.json](../config/catalog.json).
 - Add `"$schema": "./profile.schema.json"` to get editor autocompletion and validation.

@@ -51,9 +51,9 @@ Describe 'Get-ArtifactPaths' {
         $p.State | Should -Be 'C:\Foo\setup-artifacts\state.json'
     }
 
-    It 'Catalog is RootDir\catalog.json' {
+    It 'Catalog is RootDir\config\catalog.json' {
         $p = Get-ArtifactPaths -RootDir 'C:\Foo'
-        $p.Catalog | Should -Be 'C:\Foo\catalog.json'
+        $p.Catalog | Should -Be 'C:\Foo\config\catalog.json'
     }
 }
 

@@ -25,7 +25,7 @@ function Get-ArtifactPaths {
         Logs      = $logs
         Plan      = Join-Path $artifacts 'plan.json'
         State     = Join-Path $artifacts 'state.json'
-        Catalog   = Join-Path $RootDir  'catalog.json'
+        Catalog   = Join-Path $RootDir  'config\catalog.json'
     }
 }
 
