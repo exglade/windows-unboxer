@@ -4,7 +4,9 @@ An interactive automated Windows PC setup with PowerShell.
 
 Installs apps via **winget** and runs **PowerShell scripts** for configuration — using a keyboard-navigable terminal UI. Runs can be interrupted and resumed; a full report is shown at the end.
 
-Feel free to fork this and modify `config/catalog.json` for your own usage.
+Feel free to fork this and modify `config/catalog.json` for your own use.
+
+![Unboxer main menu screenshot](docs/unboxer-main-menu.png)
 
 ## Backstory
 
